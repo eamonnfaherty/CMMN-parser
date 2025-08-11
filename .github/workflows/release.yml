@@ -26,16 +26,10 @@ jobs:
         python-version: "3.11"
     
     - name: Install dependencies
-      run: |
-        uv sync --extra test --extra dev
+      run: make install-dev
     
-    - name: Run full test suite
-      run: |
-        uv run pytest tests/ -v --cov=src/cmmn_parser --cov-report=xml
-    
-    - name: Build package
-      run: |
-        uv build
+    - name: Run full pre-release validation
+      run: make pre-release
     
     - name: Upload build artifacts
       uses: actions/upload-artifact@v4

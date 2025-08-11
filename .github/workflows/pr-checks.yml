@@ -26,8 +26,7 @@ jobs:
         python-version: "3.11"
     
     - name: Install dependencies
-      run: |
-        uv sync --extra test --extra dev
+      run: make install-dev
     
     - name: Check PR title and description
       run: |
@@ -39,10 +38,8 @@ jobs:
           echo "::warning::PR title doesn't follow conventional commit format (feat/fix/docs/etc: description)"
         fi
     
-    - name: Run quick tests
-      run: |
-        # Run a subset of fast tests for quick feedback
-        uv run pytest tests/test_models.py -v
+    - name: Run quick PR validation
+      run: make pr-check
     
     - name: Check for changes in critical files
       run: |
@@ -62,16 +59,14 @@ jobs:
           echo "::notice::Dependencies were modified - check for security implications"
         fi
     
-    - name: Lint changed files only
+    - name: Check formatting on changed files
       run: |
         # Get list of changed Python files
         CHANGED_PY_FILES=$(git diff --name-only ${{ github.event.pull_request.base.sha }} ${{ github.event.pull_request.head.sha }} | grep '\.py$' || true)
         
         if [ ! -z "$CHANGED_PY_FILES" ]; then
-          echo "Linting changed files: $CHANGED_PY_FILES"
-          uv run flake8 $CHANGED_PY_FILES --count --select=E9,F63,F7,F82 --show-source --statistics
-          uv run black --check $CHANGED_PY_FILES
-          uv run isort --check-only $CHANGED_PY_FILES
+          echo "Checking formatting on changed files: $CHANGED_PY_FILES"
+          make format-check
         else
           echo "No Python files changed"
         fi

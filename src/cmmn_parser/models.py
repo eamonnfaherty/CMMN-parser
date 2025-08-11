@@ -1,6 +1,6 @@
-from typing import List, Optional
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, List, Optional, Union
 
 
 class CMMNElementType(Enum):
@@ -65,8 +65,20 @@ class Stage(CMMNElement):
     sentries: List["Sentry"] = field(default_factory=list)
     case_file_items: List["CaseFileItem"] = field(default_factory=list)
     auto_complete: bool = False
+    # Dynamic attributes for parser use
+    _task_definitions: List[Union["HumanTask", "ProcessTask", "CaseTask"]] = field(
+        default_factory=list
+    )
+    _event_definitions: List[Union["TimerEventListener", "UserEventListener"]] = field(
+        default_factory=list
+    )
+    _milestone_definitions: List["Milestone"] = field(default_factory=list)
+    _stage_definitions: List["Stage"] = field(default_factory=list)
+    _criteria_definitions: List[Union["EntryCriterion", "ExitCriterion"]] = field(
+        default_factory=list
+    )
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.STAGE
 
 
@@ -74,7 +86,7 @@ class Stage(CMMNElement):
 class Task(CMMNElement):
     is_blocking: bool = True
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.TASK
 
 
@@ -82,7 +94,7 @@ class Task(CMMNElement):
 class HumanTask(Task):
     performer: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.HUMAN_TASK
 
 
@@ -90,7 +102,7 @@ class HumanTask(Task):
 class ProcessTask(Task):
     process_ref: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.PROCESS_TASK
 
 
@@ -98,19 +110,19 @@ class ProcessTask(Task):
 class CaseTask(Task):
     case_ref: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.CASE_TASK
 
 
 @dataclass
 class Milestone(CMMNElement):
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.MILESTONE
 
 
 @dataclass
 class EventListener(CMMNElement):
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.EVENT_LISTENER
 
 
@@ -118,7 +130,7 @@ class EventListener(CMMNElement):
 class TimerEventListener(EventListener):
     timer_expression: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.TIMER_EVENT_LISTENER
 
 
@@ -126,7 +138,7 @@ class TimerEventListener(EventListener):
 class UserEventListener(EventListener):
     authorized_role_refs: List[str] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.USER_EVENT_LISTENER
 
 
@@ -137,19 +149,19 @@ class Criterion(CMMNElement):
 
 @dataclass
 class EntryCriterion(Criterion):
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.ENTRY_CRITERION
 
 
 @dataclass
 class ExitCriterion(Criterion):
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.EXIT_CRITERION
 
 
 @dataclass
 class ReactivationCriterion(Criterion):
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.REACTIVATION_CRITERION
 
 
@@ -158,7 +170,7 @@ class Sentry(CMMNElement):
     on_parts: List["OnPart"] = field(default_factory=list)
     if_part: Optional["IfPart"] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.SENTRY
 
 
@@ -183,7 +195,7 @@ class CaseFileItem(CMMNElement):
     target_refs: List[str] = field(default_factory=list)
     children: List["CaseFileItem"] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.CASE_FILE_ITEM
 
 
@@ -193,7 +205,7 @@ class Association(CMMNElement):
     target_ref: str = ""
     association_direction: Optional[str] = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.ASSOCIATION
 
 
@@ -203,7 +215,7 @@ class Case(CMMNElement):
     case_plan_model: Optional["CasePlanModel"] = None
     case_roles: List["Role"] = field(default_factory=list)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self.element_type = CMMNElementType.CASE
 
 
@@ -215,7 +227,7 @@ class CaseFileModel:
 
 @dataclass
 class CasePlanModel(Stage):
-    def __init__(self, **kwargs):
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self.element_type = CMMNElementType.STAGE
 
@@ -246,7 +258,6 @@ class CMMNDefinition:
 
     def _get_stage_plan_items(self, stage: Stage) -> List[PlanItem]:
         plan_items = stage.plan_items.copy()
-        for plan_item in stage.plan_items:
-            if hasattr(plan_item, "plan_items"):
-                plan_items.extend(self._get_stage_plan_items(plan_item))
+        # Note: This is a simple implementation that could be enhanced
+        # to recursively search nested stages if needed
         return plan_items

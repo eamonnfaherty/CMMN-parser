@@ -1,33 +1,28 @@
-from typing import Optional, Dict, Any, List, Union
 import xml.etree.ElementTree as ET
 from pathlib import Path
+from typing import Any, Union
 
 from .models import (
-    CMMNDefinition,
     Case,
-    CasePlanModel,
-    CaseFileModel,
     CaseFileItem,
-    Stage,
-    Task,
-    HumanTask,
-    ProcessTask,
+    CaseFileModel,
+    CasePlanModel,
     CaseTask,
-    Milestone,
-    EventListener,
-    TimerEventListener,
-    UserEventListener,
-    Sentry,
-    OnPart,
-    IfPart,
+    CMMNDefinition,
     EntryCriterion,
     ExitCriterion,
-    ReactivationCriterion,
-    PlanItem,
+    HumanTask,
+    IfPart,
     ItemControl,
-    Association,
+    Milestone,
+    OnPart,
+    PlanItem,
+    ProcessTask,
     Role,
-    CMMNElementType,
+    Sentry,
+    Stage,
+    TimerEventListener,
+    UserEventListener,
 )
 
 
@@ -38,7 +33,7 @@ class CMMNParseError(Exception):
 class CMMNParser:
     CMMN_NAMESPACE = "http://www.omg.org/spec/CMMN/20151109/MODEL"
 
-    def __init__(self):
+    def __init__(self) -> None:
         self.namespaces = {
             "cmmn": self.CMMN_NAMESPACE,
             "cmmndi": "http://www.omg.org/spec/CMMN/20151109/CMMNDI",
@@ -63,8 +58,11 @@ class CMMNParser:
         except ET.ParseError as e:
             raise CMMNParseError(f"Failed to parse CMMN text: {e}")
 
-    def _parse_tree(self, tree: ET.ElementTree) -> CMMNDefinition:
+    def _parse_tree(self, tree: Any) -> CMMNDefinition:
         root = tree.getroot()
+
+        if root is None:
+            raise CMMNParseError("No root element found")
 
         if root.tag != f"{{{self.CMMN_NAMESPACE}}}definitions":
             raise CMMNParseError("Root element must be 'definitions'")
@@ -142,7 +140,7 @@ class CMMNParser:
         self._parse_criteria_definitions(plan_model_elem, plan_model)
         return plan_model
 
-    def _parse_stage_content(self, stage_elem: ET.Element, stage: Stage):
+    def _parse_stage_content(self, stage_elem: ET.Element, stage: Stage) -> None:
         for plan_item_elem in stage_elem.findall("cmmn:planItem", self.namespaces):
             plan_item = self._parse_plan_item(plan_item_elem)
             stage.plan_items.append(plan_item)
@@ -225,7 +223,7 @@ class CMMNParser:
 
         return sentry
 
-    def _parse_task_definitions(self, parent_elem: ET.Element, stage: Stage):
+    def _parse_task_definitions(self, parent_elem: ET.Element, stage: Stage) -> None:
         """Parse task definitions within a stage."""
         # Human Tasks
         for task_elem in parent_elem.findall("cmmn:humanTask", self.namespaces):
@@ -235,34 +233,27 @@ class CMMNParser:
                 is_blocking=task_elem.get("isBlocking", "true").lower() == "true",
                 performer=task_elem.get("performer"),
             )
-            # Store in a way that tests can access them
-            if not hasattr(stage, "_task_definitions"):
-                stage._task_definitions = []
             stage._task_definitions.append(task)
 
         # Process Tasks
         for task_elem in parent_elem.findall("cmmn:processTask", self.namespaces):
-            task = ProcessTask(
+            process_task = ProcessTask(
                 id=task_elem.get("id", ""),
                 name=task_elem.get("name"),
                 is_blocking=task_elem.get("isBlocking", "true").lower() == "true",
                 process_ref=task_elem.get("processRef"),
             )
-            if not hasattr(stage, "_task_definitions"):
-                stage._task_definitions = []
-            stage._task_definitions.append(task)
+            stage._task_definitions.append(process_task)
 
         # Case Tasks
         for task_elem in parent_elem.findall("cmmn:caseTask", self.namespaces):
-            task = CaseTask(
+            case_task = CaseTask(
                 id=task_elem.get("id", ""),
                 name=task_elem.get("name"),
                 is_blocking=task_elem.get("isBlocking", "true").lower() == "true",
                 case_ref=task_elem.get("caseRef"),
             )
-            if not hasattr(stage, "_task_definitions"):
-                stage._task_definitions = []
-            stage._task_definitions.append(task)
+            stage._task_definitions.append(case_task)
 
         # Nested stages
         for stage_elem in parent_elem.findall("cmmn:stage", self.namespaces):
@@ -273,11 +264,9 @@ class CMMNParser:
             )
             self._parse_stage_content(stage_elem, nested_stage)
             self._parse_task_definitions(stage_elem, nested_stage)
-            if not hasattr(stage, "_stage_definitions"):
-                stage._stage_definitions = []
             stage._stage_definitions.append(nested_stage)
 
-    def _parse_event_definitions(self, parent_elem: ET.Element, stage: Stage):
+    def _parse_event_definitions(self, parent_elem: ET.Element, stage: Stage) -> None:
         """Parse event listener definitions within a stage."""
         # Timer Event Listeners
         for event_elem in parent_elem.findall(
@@ -291,8 +280,6 @@ class CMMNParser:
                 name=event_elem.get("name"),
                 timer_expression=timer_expr,
             )
-            if not hasattr(stage, "_event_definitions"):
-                stage._event_definitions = []
             stage._event_definitions.append(event)
 
         # User Event Listeners
@@ -302,26 +289,26 @@ class CMMNParser:
             auth_roles = event_elem.get("authorizedRoleRefs", "")
             auth_roles_list = auth_roles.split() if auth_roles else []
 
-            event = UserEventListener(
+            user_event = UserEventListener(
                 id=event_elem.get("id", ""),
                 name=event_elem.get("name"),
                 authorized_role_refs=auth_roles_list,
             )
-            if not hasattr(stage, "_event_definitions"):
-                stage._event_definitions = []
-            stage._event_definitions.append(event)
+            stage._event_definitions.append(user_event)
 
-    def _parse_milestone_definitions(self, parent_elem: ET.Element, stage: Stage):
+    def _parse_milestone_definitions(
+        self, parent_elem: ET.Element, stage: Stage
+    ) -> None:
         """Parse milestone definitions within a stage."""
         for milestone_elem in parent_elem.findall("cmmn:milestone", self.namespaces):
             milestone = Milestone(
                 id=milestone_elem.get("id", ""), name=milestone_elem.get("name")
             )
-            if not hasattr(stage, "_milestone_definitions"):
-                stage._milestone_definitions = []
             stage._milestone_definitions.append(milestone)
 
-    def _parse_criteria_definitions(self, parent_elem: ET.Element, stage: Stage):
+    def _parse_criteria_definitions(
+        self, parent_elem: ET.Element, stage: Stage
+    ) -> None:
         """Parse criteria definitions within a stage."""
         for criterion_elem in parent_elem.findall(
             "cmmn:entryCriterion", self.namespaces
@@ -331,18 +318,14 @@ class CMMNParser:
                 name=criterion_elem.get("name"),
                 sentry_ref=criterion_elem.get("sentryRef"),
             )
-            if not hasattr(stage, "_criteria_definitions"):
-                stage._criteria_definitions = []
             stage._criteria_definitions.append(criterion)
 
         for criterion_elem in parent_elem.findall(
             "cmmn:exitCriterion", self.namespaces
         ):
-            criterion = ExitCriterion(
+            exit_criterion = ExitCriterion(
                 id=criterion_elem.get("id", ""),
                 name=criterion_elem.get("name"),
                 sentry_ref=criterion_elem.get("sentryRef"),
             )
-            if not hasattr(stage, "_criteria_definitions"):
-                stage._criteria_definitions = []
-            stage._criteria_definitions.append(criterion)
+            stage._criteria_definitions.append(exit_criterion)

@@ -1,31 +1,32 @@
-import pytest
-from pathlib import Path
-import tempfile
 import os
+import tempfile
+from pathlib import Path
 
-from cmmn_parser import CMMNParser, CMMNParseError
+import pytest
+
+from cmmn_parser import CMMNParseError, CMMNParser
 from cmmn_parser.models import (
-    CMMNDefinition,
     Case,
-    CasePlanModel,
+    CaseFileItem,
     CaseFileModel,
-    Stage,
-    HumanTask,
-    ProcessTask,
+    CasePlanModel,
     CaseTask,
-    Milestone,
-    TimerEventListener,
-    UserEventListener,
-    Sentry,
-    OnPart,
-    IfPart,
+    CMMNDefinition,
+    CMMNElementType,
     EntryCriterion,
     ExitCriterion,
-    PlanItem,
+    HumanTask,
+    IfPart,
     ItemControl,
-    CaseFileItem,
+    Milestone,
+    OnPart,
+    PlanItem,
+    ProcessTask,
     Role,
-    CMMNElementType,
+    Sentry,
+    Stage,
+    TimerEventListener,
+    UserEventListener,
 )
 
 
