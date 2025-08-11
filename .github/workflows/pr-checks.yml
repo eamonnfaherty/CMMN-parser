@@ -8,6 +8,10 @@ jobs:
   pr-validation:
     if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     
     steps:
     - name: Checkout code
@@ -114,6 +118,10 @@ jobs:
   auto-assign:
     runs-on: ubuntu-latest
     if: github.event.action == 'opened'
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
     
     steps:
     - name: Auto-assign reviewers
