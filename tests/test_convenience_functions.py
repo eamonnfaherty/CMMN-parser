@@ -2,10 +2,10 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from cmmn_parser.models import CMMNDefinition
 
 import cmmn_parser
 from cmmn_parser import CMMNParseError
-from cmmn_parser.models import CMMNDefinition
 
 
 class TestConvenienceFunctions:

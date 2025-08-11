@@ -1,0 +1,529 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://raw.githubusercontent.com/eamonnfaherty/CMMN-parser/main/src/cmmn_parser/schema.json",
+  "title": "CMMN JSON Schema",
+  "description": "JSON Schema for Case Management Model and Notation (CMMN) 1.1 specification",
+  "type": "object",
+  "required": ["definitions"],
+  "properties": {
+    "definitions": {
+      "type": "object",
+      "required": ["cases"],
+      "properties": {
+        "targetNamespace": {
+          "type": "string",
+          "description": "The target namespace for the CMMN definition"
+        },
+        "expressionLanguage": {
+          "type": "string",
+          "description": "Default expression language used in the CMMN definition"
+        },
+        "exporter": {
+          "type": "string",
+          "description": "The name of the tool that exported this CMMN definition"
+        },
+        "exporterVersion": {
+          "type": "string",
+          "description": "The version of the tool that exported this CMMN definition"
+        },
+        "cases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/definitions/Case"
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Case": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "caseFileModel": {
+          "$ref": "#/definitions/CaseFileModel"
+        },
+        "casePlanModel": {
+          "$ref": "#/definitions/CasePlanModel"
+        },
+        "caseRoles": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Role"
+          }
+        }
+      }
+    },
+    "CaseFileModel": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "caseFileItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CaseFileItem"
+          }
+        }
+      }
+    },
+    "CaseFileItem": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "definitionType": {
+          "type": "string"
+        },
+        "multiplicity": {
+          "type": "string",
+          "enum": ["ZeroOrOne", "ExactlyOne", "ZeroOrMore", "OneOrMore", "Unknown", "Unspecified"]
+        },
+        "sourceRef": {
+          "type": "string"
+        },
+        "targetRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CaseFileItem"
+          }
+        }
+      }
+    },
+    "CasePlanModel": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "autoComplete": {
+          "type": "boolean",
+          "default": false
+        },
+        "planItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PlanItem"
+          }
+        },
+        "sentries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Sentry"
+          }
+        },
+        "caseFileItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CaseFileItem"
+          }
+        },
+        "taskDefinitions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"$ref": "#/definitions/HumanTask"},
+              {"$ref": "#/definitions/ProcessTask"},
+              {"$ref": "#/definitions/CaseTask"}
+            ]
+          }
+        },
+        "eventDefinitions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"$ref": "#/definitions/TimerEventListener"},
+              {"$ref": "#/definitions/UserEventListener"}
+            ]
+          }
+        },
+        "milestoneDefinitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Milestone"
+          }
+        },
+        "stageDefinitions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Stage"
+          }
+        },
+        "criteriaDefinitions": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              {"$ref": "#/definitions/EntryCriterion"},
+              {"$ref": "#/definitions/ExitCriterion"}
+            ]
+          }
+        }
+      }
+    },
+    "PlanItem": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "definitionRef": {
+          "type": "string"
+        },
+        "entryCriteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "exitCriteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "reactivationCriteria": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "itemControl": {
+          "$ref": "#/definitions/ItemControl"
+        }
+      }
+    },
+    "ItemControl": {
+      "type": "object",
+      "properties": {
+        "requiredRule": {
+          "type": "string"
+        },
+        "repetitionRule": {
+          "type": "string"
+        },
+        "manualActivationRule": {
+          "type": "string"
+        }
+      }
+    },
+    "Stage": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "autoComplete": {
+          "type": "boolean",
+          "default": false
+        },
+        "planItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/PlanItem"
+          }
+        },
+        "sentries": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/Sentry"
+          }
+        },
+        "caseFileItems": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CaseFileItem"
+          }
+        }
+      }
+    },
+    "HumanTask": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "isBlocking": {
+          "type": "boolean",
+          "default": true
+        },
+        "performer": {
+          "type": "string"
+        }
+      }
+    },
+    "ProcessTask": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "isBlocking": {
+          "type": "boolean",
+          "default": true
+        },
+        "processRef": {
+          "type": "string"
+        }
+      }
+    },
+    "CaseTask": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "isBlocking": {
+          "type": "boolean",
+          "default": true
+        },
+        "caseRef": {
+          "type": "string"
+        }
+      }
+    },
+    "Milestone": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        }
+      }
+    },
+    "TimerEventListener": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "timerExpression": {
+          "type": "string"
+        }
+      }
+    },
+    "UserEventListener": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "authorizedRoleRefs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Sentry": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "onParts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/OnPart"
+          }
+        },
+        "ifPart": {
+          "$ref": "#/definitions/IfPart"
+        }
+      }
+    },
+    "OnPart": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sourceRef": {
+          "type": "string"
+        },
+        "standardEvent": {
+          "type": "string",
+          "enum": [
+            "create", "delete", "replace", "update", "addChild", "removeChild",
+            "enable", "disable", "start", "suspend", "resume", "terminate",
+            "complete", "fault", "occur", "close", "exit"
+          ]
+        }
+      }
+    },
+    "IfPart": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "condition": {
+          "type": "string"
+        }
+      }
+    },
+    "EntryCriterion": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "sentryRef": {
+          "type": "string"
+        }
+      }
+    },
+    "ExitCriterion": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "documentation": {
+          "type": "string"
+        },
+        "sentryRef": {
+          "type": "string"
+        }
+      }
+    },
+    "Role": {
+      "type": "object",
+      "required": ["id"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -1,5 +1,4 @@
 import pytest
-
 from cmmn_parser.models import (
     Association,
     Case,

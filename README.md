@@ -6,7 +6,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/CMMN-parser.svg)](https://pypi.org/project/CMMN-parser/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A comprehensive Python library for parsing CMMN (Case Management Model and Notation) files. This library provides a complete, typed interface for working with CMMN documents, supporting all major CMMN constructs including stages, tasks, events, milestones, sentries, and case file items.
+A comprehensive Python library for parsing CMMN (Case Management Model and Notation) files in both XML and JSON formats. This library provides a complete, typed interface for working with CMMN documents, supporting all major CMMN constructs including stages, tasks, events, milestones, sentries, and case file items.
 
 ## Features
 
@@ -20,8 +20,15 @@ A comprehensive Python library for parsing CMMN (Case Management Model and Notat
   - Entry/Exit/Reactivation Criteria
   - Plan Items with Item Controls
 
+- **Multiple Format Support**: 
+  - **XML Format**: Traditional CMMN XML files
+  - **JSON Format**: Modern JSON representation with full schema validation
+  - **Auto-Detection**: Automatically detects file format based on content
+
+- **JSON Schema Validation**: Built-in JSONSchema validation for CMMN JSON files
 - **Type Safety**: Fully typed with comprehensive dataclasses for all CMMN elements
-- **Flexible Input**: Parse from files or strings
+- **Flexible Input**: Parse from files or strings in either format
+- **Validation Functions**: Standalone validation functions for JSON format
 - **Error Handling**: Comprehensive error handling with detailed error messages
 - **High Test Coverage**: 98% test coverage with exhaustive unit tests
 - **Python 3.8+ Support**: Compatible with Python 3.8 through 3.13
@@ -39,13 +46,13 @@ uv add CMMN-parser
 
 ## Quick Start
 
-### Parse from File
+### Parse from File (Auto-Detection)
 
 ```python
 import cmmn_parser
 
-# Parse a CMMN file
-definition = cmmn_parser.parse_cmmn_file("path/to/your/case.cmmn")
+# Parse a CMMN file (XML or JSON - auto-detected)
+definition = cmmn_parser.parse_cmmn_file("path/to/your/case.cmmn")  # or .json
 
 # Access cases
 for case in definition.cases:
@@ -90,6 +97,110 @@ definition = parser.parse_file("case.cmmn")
 
 # Parse string
 definition = parser.parse_string(cmmn_xml_string)
+```
+
+## JSON Format Support
+
+### Parse from JSON String
+
+```python
+import cmmn_parser
+
+cmmn_json = {
+    "definitions": {
+        "targetNamespace": "http://example.com/cmmn",
+        "cases": [
+            {
+                "id": "SimpleCase",
+                "name": "Simple Case",
+                "casePlanModel": {
+                    "id": "CasePlan",
+                    "name": "Case Plan",
+                    "planItems": [
+                        {
+                            "id": "Task1",
+                            "name": "Review",
+                            "definitionRef": "HumanTask1"
+                        }
+                    ],
+                    "taskDefinitions": [
+                        {
+                            "id": "HumanTask1",
+                            "name": "Review Document",
+                            "performer": "reviewer"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+
+# Parse from dictionary
+definition = cmmn_parser.parse_cmmn_json(cmmn_json)
+
+# Or parse from JSON string
+import json
+definition = cmmn_parser.parse_cmmn_json(json.dumps(cmmn_json))
+
+case = definition.cases[0]
+print(f"Parsed case: {case.name}")
+```
+
+### Parse from JSON File
+
+```python
+import cmmn_parser
+
+# Parse JSON file directly
+definition = cmmn_parser.parse_cmmn_json_file("case.json")
+
+# Or use the generic function (auto-detects format)
+definition = cmmn_parser.parse_cmmn_file("case.json")
+```
+
+### JSON Validation
+
+```python
+import cmmn_parser
+
+# Validate JSON data
+cmmn_json = {
+    "definitions": {
+        "cases": [
+            {
+                "id": "TestCase",
+                "name": "Test Case"
+            }
+        ]
+    }
+}
+
+# Validate and get boolean result
+try:
+    is_valid = cmmn_parser.validate_cmmn_json(cmmn_json)
+    print("JSON is valid!")
+except cmmn_parser.CMMNParseError as e:
+    print(f"Validation failed: {e}")
+
+# Get validation errors without exception
+errors = cmmn_parser.get_validation_errors(cmmn_json)
+if errors:
+    print("Validation errors:", errors)
+else:
+    print("No validation errors")
+
+# Validate JSON file
+try:
+    is_valid = cmmn_parser.validate_cmmn_json_file("case.json")
+    print("File is valid!")
+except cmmn_parser.CMMNParseError as e:
+    print(f"File validation failed: {e}")
+
+# Get schema information
+schema_info = cmmn_parser.get_schema_info()
+print(f"Schema: {schema_info['title']}")
+print(f"Supported elements: {len(schema_info['supported_elements'])}")
 ```
 
 ## Advanced Usage

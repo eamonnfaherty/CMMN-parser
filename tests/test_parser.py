@@ -3,8 +3,6 @@ import tempfile
 from pathlib import Path
 
 import pytest
-
-from cmmn_parser import CMMNParseError, CMMNParser
 from cmmn_parser.models import (
     Case,
     CaseFileItem,
@@ -28,6 +26,8 @@ from cmmn_parser.models import (
     TimerEventListener,
     UserEventListener,
 )
+
+from cmmn_parser import CMMNParseError, CMMNParser
 
 
 class TestCMMNParser:
@@ -349,7 +349,7 @@ class TestCMMNParser:
         """Test error handling for invalid XML."""
         invalid_xml = "<invalid>xml without closing tag"
 
-        with pytest.raises(CMMNParseError, match="Failed to parse CMMN text"):
+        with pytest.raises(CMMNParseError, match="Failed to parse CMMN XML"):
             parser.parse_string(invalid_xml)
 
     def test_error_handling_non_cmmn_xml(self, parser):

@@ -1,0 +1,206 @@
+{
+  "definitions": {
+    "targetNamespace": "http://example.com/cmmn",
+    "expressionLanguage": "http://www.w3.org/1999/XPath",
+    "exporter": "TestExporter",
+    "exporterVersion": "1.0.0",
+    "cases": [
+      {
+        "id": "Case_1",
+        "name": "Test Case",
+        "caseFileModel": {
+          "id": "CaseFileModel_1",
+          "caseFileItems": [
+            {
+              "id": "CaseFileItem_1",
+              "name": "Document",
+              "definitionType": "http://example.com/Document",
+              "multiplicity": "OneOrMore",
+              "children": [
+                {
+                  "id": "CaseFileItem_2",
+                  "name": "Attachment",
+                  "definitionType": "http://example.com/Attachment"
+                }
+              ]
+            },
+            {
+              "id": "CaseFileItem_3",
+              "name": "Customer",
+              "definitionType": "http://example.com/Customer",
+              "sourceRef": "external_source",
+              "targetRefs": ["target1", "target2"]
+            }
+          ]
+        },
+        "casePlanModel": {
+          "id": "CasePlanModel_1",
+          "name": "Main Case Plan",
+          "autoComplete": true,
+          "planItems": [
+            {
+              "id": "PlanItem_1",
+              "name": "Initial Stage",
+              "definitionRef": "Stage_1",
+              "entryCriteria": ["EntryCriterion_1"],
+              "exitCriteria": ["ExitCriterion_1"],
+              "itemControl": {
+                "requiredRule": "true",
+                "repetitionRule": "count < 3",
+                "manualActivationRule": "userRequested"
+              }
+            },
+            {
+              "id": "PlanItem_2",
+              "name": "Human Task Item",
+              "definitionRef": "HumanTask_1"
+            },
+            {
+              "id": "PlanItem_3",
+              "name": "Process Task Item",
+              "definitionRef": "ProcessTask_1"
+            },
+            {
+              "id": "PlanItem_4",
+              "name": "Case Task Item",
+              "definitionRef": "CaseTask_1"
+            },
+            {
+              "id": "PlanItem_5",
+              "name": "Milestone Item",
+              "definitionRef": "Milestone_1"
+            },
+            {
+              "id": "PlanItem_6",
+              "name": "Timer Event Item",
+              "definitionRef": "TimerEvent_1"
+            },
+            {
+              "id": "PlanItem_7",
+              "name": "User Event Item",
+              "definitionRef": "UserEvent_1"
+            }
+          ],
+          "sentries": [
+            {
+              "id": "Sentry_1",
+              "name": "Entry Sentry",
+              "onParts": [
+                {
+                  "id": "OnPart_1",
+                  "sourceRef": "PlanItem_2",
+                  "standardEvent": "complete"
+                }
+              ],
+              "ifPart": {
+                "id": "IfPart_1",
+                "condition": "status == 'approved'"
+              }
+            },
+            {
+              "id": "Sentry_2",
+              "name": "Exit Sentry",
+              "onParts": [
+                {
+                  "id": "OnPart_2",
+                  "sourceRef": "PlanItem_5",
+                  "standardEvent": "occur"
+                }
+              ]
+            }
+          ],
+          "criteriaDefinitions": [
+            {
+              "id": "EntryCriterion_1",
+              "sentryRef": "Sentry_1",
+              "type": "entry"
+            },
+            {
+              "id": "ExitCriterion_1",
+              "sentryRef": "Sentry_2",
+              "type": "exit"
+            }
+          ],
+          "stageDefinitions": [
+            {
+              "id": "Stage_1",
+              "name": "Nested Stage",
+              "autoComplete": false,
+              "planItems": [
+                {
+                  "id": "PlanItem_8",
+                  "name": "Nested Task",
+                  "definitionRef": "HumanTask_2"
+                }
+              ]
+            }
+          ],
+          "taskDefinitions": [
+            {
+              "id": "HumanTask_1",
+              "name": "Review Document",
+              "isBlocking": true,
+              "performer": "reviewer"
+            },
+            {
+              "id": "HumanTask_2",
+              "name": "Nested Human Task",
+              "isBlocking": false
+            },
+            {
+              "id": "ProcessTask_1",
+              "name": "Automated Processing",
+              "isBlocking": true,
+              "processRef": "AutomationProcess"
+            },
+            {
+              "id": "CaseTask_1",
+              "name": "Sub Case",
+              "isBlocking": true,
+              "caseRef": "SubCase"
+            }
+          ],
+          "eventDefinitions": [
+            {
+              "id": "TimerEvent_1",
+              "name": "Deadline Timer",
+              "timerExpression": "PT2H"
+            },
+            {
+              "id": "UserEvent_1",
+              "name": "User Intervention",
+              "authorizedRoleRefs": ["admin", "manager"]
+            }
+          ],
+          "milestoneDefinitions": [
+            {
+              "id": "Milestone_1",
+              "name": "Process Complete"
+            }
+          ],
+          "caseFileItems": [
+            {
+              "id": "CaseFileItem_4",
+              "name": "WorkingData",
+              "definitionType": "http://example.com/WorkingData"
+            }
+          ]
+        },
+        "caseRoles": [
+          {
+            "id": "Role_1",
+            "name": "reviewer"
+          },
+          {
+            "id": "Role_2",
+            "name": "admin"
+          },
+          {
+            "id": "Role_3",
+            "name": "manager"
+          }
+        ]
+      }
+    ]
+  }
+}

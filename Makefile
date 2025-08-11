@@ -1,4 +1,4 @@
-.PHONY: help install install-dev test test-cov lint format type-check security build clean all ci pr-check
+.PHONY: help install install-dev test test-cov lint format type-check complexity complexity-report complexity-strict security build clean all ci pr-check
 .DEFAULT_GOAL := help
 
 # Colors for output
@@ -60,6 +60,40 @@ type-check: ## Run type checking (mypy)
 	@echo "$(CYAN)Running mypy type checking...$(NC)"
 	uv run mypy cmmn_parser --ignore-missing-imports
 
+complexity: ## Check code complexity (radon)
+	@echo "$(CYAN)Running complexity analysis with radon...$(NC)"
+	@echo "$(YELLOW)Checking cyclomatic complexity (max: 10)...$(NC)"
+	uv run radon cc cmmn_parser --min B --show-complexity
+	@echo "$(YELLOW)Checking maintainability index (min: B)...$(NC)"
+	uv run radon mi cmmn_parser --min B --show
+	@echo "$(YELLOW)Generating reports for CI...$(NC)"
+	uv run radon cc cmmn_parser --json > complexity-cc.json || true
+	uv run radon mi cmmn_parser --json > complexity-mi.json || true
+
+complexity-report: ## Generate detailed complexity reports
+	@echo "$(CYAN)Generating detailed complexity reports...$(NC)"
+	@echo "$(YELLOW)Cyclomatic complexity report:$(NC)"
+	uv run radon cc cmmn_parser --json > complexity-cc.json || true
+	uv run radon cc cmmn_parser --show-complexity
+	@echo ""
+	@echo "$(YELLOW)Maintainability index report:$(NC)"
+	uv run radon mi cmmn_parser --json > complexity-mi.json || true
+	uv run radon mi cmmn_parser --show
+	@echo ""
+	@echo "$(YELLOW)Raw metrics report:$(NC)"
+	uv run radon raw cmmn_parser
+
+complexity-strict: ## Strict complexity check (fails on high complexity)
+	@echo "$(CYAN)Running strict complexity checks...$(NC)"
+	@echo "$(YELLOW)Checking for any functions with complexity > 10...$(NC)"
+	@if uv run radon cc cmmn_parser --min C --show-complexity | grep -q "C ("; then \
+		echo "$(RED)❌ Found functions with high complexity (C grade or worse)$(NC)"; \
+		uv run radon cc cmmn_parser --min C --show-complexity; \
+		exit 1; \
+	else \
+		echo "$(GREEN)✅ All functions have acceptable complexity!$(NC)"; \
+	fi
+
 security: ## Run security checks
 	@echo "$(CYAN)Running security checks...$(NC)"
 	uv pip install safety
@@ -84,6 +118,8 @@ clean: ## Clean build artifacts and cache
 	rm -rf .coverage
 	rm -rf htmlcov/
 	rm -rf .mypy_cache/
+	rm -f complexity-cc.json
+	rm -f complexity-mi.json
 	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
 	find . -type f -name "*.pyc" -delete
 
@@ -94,7 +130,7 @@ clean-all: clean ## Clean everything including virtual environment
 # Combined targets
 all: format lint type-check test-cov ## Run formatting, linting, type-checking, and tests
 
-ci: format-check lint type-check test-cov-xml ## Run all CI checks (mirrors GitHub Actions)
+ci: format-check lint type-check complexity test-cov-xml ## Run all CI checks (mirrors GitHub Actions)
 	@echo "$(GREEN)✅ All CI checks passed!$(NC)"
 
 pr-check: ## Run quick PR checks
@@ -178,3 +214,4 @@ versions: ## Show versions of tools
 	@echo "black: $$(uv run black --version 2>/dev/null || echo 'Not available')"
 	@echo "mypy: $$(uv run mypy --version 2>/dev/null || echo 'Not available')"
 	@echo "flake8: $$(uv run flake8 --version 2>/dev/null || echo 'Not available')"
+	@echo "radon: $$(uv run radon --version 2>/dev/null || echo 'Not available')"

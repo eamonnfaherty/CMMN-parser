@@ -1,7 +1,9 @@
+import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import Any, Union
+from typing import Any, Callable, Dict, Optional, Union
 
+import jsonschema
 from cmmn_parser.models import (
     Case,
     CaseFileItem,
@@ -40,25 +42,100 @@ class CMMNParser:
             "dc": "http://www.omg.org/spec/CMMN/20151109/DC",
             "di": "http://www.omg.org/spec/CMMN/20151109/DI",
         }
+        self._json_schema: Optional[Dict[str, Any]] = None
+
+    def _load_json_schema(self) -> Dict[str, Any]:
+        """Load the CMMN JSON schema."""
+        if self._json_schema is None:
+            schema_path = Path(__file__).parent / "schema.json"
+            with open(schema_path, "r") as f:
+                self._json_schema = json.load(f)
+        return self._json_schema
+
+    def validate_json(self, cmmn_data: Union[str, Dict[str, Any]]) -> bool:
+        """Validate CMMN JSON data against the schema."""
+        schema = self._load_json_schema()
+
+        if isinstance(cmmn_data, str):
+            try:
+                data = json.loads(cmmn_data)
+            except json.JSONDecodeError as e:
+                raise CMMNParseError(f"Invalid JSON format: {e}")
+        else:
+            data = cmmn_data
+
+        try:
+            jsonschema.validate(data, schema)
+            return True
+        except jsonschema.exceptions.ValidationError as e:
+            raise CMMNParseError(f"JSON validation failed: {e.message}")
+        except jsonschema.exceptions.SchemaError as e:
+            raise CMMNParseError(f"Schema error: {e.message}")
 
     def parse_file(self, file_path: Union[str, Path]) -> CMMNDefinition:
-        try:
-            tree = ET.parse(str(file_path))
-            return self._parse_tree(tree)
-        except ET.ParseError as e:
-            raise CMMNParseError(f"Failed to parse CMMN file: {e}")
-        except FileNotFoundError:
+        """Parse a CMMN file (XML or JSON format)."""
+        file_path = Path(file_path)
+
+        if not file_path.exists():
             raise CMMNParseError(f"CMMN file not found: {file_path}")
 
-    def parse_string(self, cmmn_text: str) -> CMMNDefinition:
+        try:
+            with open(file_path, "r") as f:
+                content = f.read()
+
+            # Try to detect format based on file extension and content
+            if file_path.suffix.lower() == ".json" or content.strip().startswith("{"):
+                return self.parse_json_string(content)
+            else:
+                # Assume XML format
+                return self.parse_xml_string(content)
+
+        except (IOError, OSError) as e:
+            raise CMMNParseError(f"Failed to read CMMN file: {e}")
+
+    def parse_xml_string(self, cmmn_text: str) -> CMMNDefinition:
+        """Parse CMMN XML string."""
         try:
             root = ET.fromstring(cmmn_text)
             tree = ET.ElementTree(root)
-            return self._parse_tree(tree)
+            return self._parse_xml_tree(tree)
         except ET.ParseError as e:
-            raise CMMNParseError(f"Failed to parse CMMN text: {e}")
+            raise CMMNParseError(f"Failed to parse CMMN XML: {e}")
 
-    def _parse_tree(self, tree: Any) -> CMMNDefinition:
+    def parse_json_file(self, file_path: Union[str, Path]) -> CMMNDefinition:
+        """Parse a CMMN JSON file."""
+        try:
+            with open(file_path, "r") as f:
+                content = f.read()
+            return self.parse_json_string(content)
+        except FileNotFoundError:
+            raise CMMNParseError(f"CMMN file not found: {file_path}")
+        except (IOError, OSError) as e:
+            raise CMMNParseError(f"Failed to read CMMN file: {e}")
+
+    def parse_json_string(self, cmmn_json: str) -> CMMNDefinition:
+        """Parse CMMN JSON string."""
+        try:
+            data = json.loads(cmmn_json)
+        except json.JSONDecodeError as e:
+            raise CMMNParseError(f"Invalid JSON format: {e}")
+
+        # Validate against schema
+        self.validate_json(data)
+
+        # Parse the JSON data
+        return self._parse_json_data(data)
+
+    def parse_string(self, cmmn_text: str) -> CMMNDefinition:
+        """Parse a CMMN string (auto-detect XML or JSON format)."""
+        stripped = cmmn_text.strip()
+
+        if stripped.startswith("{"):
+            return self.parse_json_string(cmmn_text)
+        else:
+            return self.parse_xml_string(cmmn_text)
+
+    def _parse_xml_tree(self, tree: Any) -> CMMNDefinition:
         root = tree.getroot()
 
         if root is None:
@@ -329,3 +406,301 @@ class CMMNParser:
                 sentry_ref=criterion_elem.get("sentryRef"),
             )
             stage._criteria_definitions.append(exit_criterion)
+
+    # JSON parsing methods
+    def _parse_json_data(self, data: Dict[str, Any]) -> CMMNDefinition:
+        """Parse CMMN data from JSON format."""
+        definitions_data = data["definitions"]
+
+        definition = CMMNDefinition(
+            target_namespace=definitions_data.get("targetNamespace"),
+            expression_language=definitions_data.get("expressionLanguage"),
+            exporter=definitions_data.get("exporter"),
+            exporter_version=definitions_data.get("exporterVersion"),
+        )
+
+        for case_data in definitions_data["cases"]:
+            case = self._parse_json_case(case_data)
+            definition.cases.append(case)
+
+        return definition
+
+    def _parse_json_case(self, case_data: Dict[str, Any]) -> Case:
+        """Parse a case from JSON data."""
+        case = Case(
+            id=case_data["id"],
+            name=case_data.get("name"),
+            documentation=case_data.get("documentation"),
+        )
+
+        if "caseFileModel" in case_data:
+            case.case_file_model = self._parse_json_case_file_model(
+                case_data["caseFileModel"]
+            )
+
+        if "casePlanModel" in case_data:
+            case.case_plan_model = self._parse_json_case_plan_model(
+                case_data["casePlanModel"]
+            )
+
+        if "caseRoles" in case_data:
+            case.case_roles = [
+                self._parse_json_role(role_data) for role_data in case_data["caseRoles"]
+            ]
+
+        return case
+
+    def _parse_json_case_file_model(self, data: Dict[str, Any]) -> CaseFileModel:
+        """Parse case file model from JSON data."""
+        file_model = CaseFileModel(id=data["id"])
+
+        if "caseFileItems" in data:
+            file_model.case_file_items = [
+                self._parse_json_case_file_item(item_data)
+                for item_data in data["caseFileItems"]
+            ]
+
+        return file_model
+
+    def _parse_json_case_file_item(self, data: Dict[str, Any]) -> CaseFileItem:
+        """Parse case file item from JSON data."""
+        item = CaseFileItem(
+            id=data["id"],
+            name=data.get("name"),
+            documentation=data.get("documentation"),
+            definition_type=data.get("definitionType"),
+            multiplicity=data.get("multiplicity"),
+            source_ref=data.get("sourceRef"),
+            target_refs=data.get("targetRefs", []),
+        )
+
+        if "children" in data:
+            item.children = [
+                self._parse_json_case_file_item(child_data)
+                for child_data in data["children"]
+            ]
+
+        return item
+
+    def _parse_json_case_plan_model(self, data: Dict[str, Any]) -> CasePlanModel:
+        """Parse case plan model from JSON data."""
+        plan_model = CasePlanModel(
+            id=data["id"],
+            name=data.get("name"),
+            documentation=data.get("documentation"),
+            auto_complete=data.get("autoComplete", False),
+        )
+
+        self._parse_plan_model_items(plan_model, data)
+        self._parse_plan_model_definitions(plan_model, data)
+
+        return plan_model
+
+    def _parse_plan_model_items(
+        self, plan_model: CasePlanModel, data: Dict[str, Any]
+    ) -> None:
+        """Parse plan items, sentries, and case file items for a case plan model."""
+        if "planItems" in data:
+            plan_model.plan_items = [
+                self._parse_json_plan_item(item_data) for item_data in data["planItems"]
+            ]
+
+        if "sentries" in data:
+            plan_model.sentries = [
+                self._parse_json_sentry(sentry_data) for sentry_data in data["sentries"]
+            ]
+
+        if "caseFileItems" in data:
+            plan_model.case_file_items = [
+                self._parse_json_case_file_item(item_data)
+                for item_data in data["caseFileItems"]
+            ]
+
+    def _parse_plan_model_definitions(
+        self, plan_model: CasePlanModel, data: Dict[str, Any]
+    ) -> None:
+        """Parse all definition types for a case plan model."""
+        definition_parsers = [
+            ("taskDefinitions", self._parse_json_task, plan_model._task_definitions),
+            ("eventDefinitions", self._parse_json_event, plan_model._event_definitions),
+            (
+                "milestoneDefinitions",
+                self._parse_json_milestone,
+                plan_model._milestone_definitions,
+            ),
+            ("stageDefinitions", self._parse_json_stage, plan_model._stage_definitions),
+            (
+                "criteriaDefinitions",
+                self._parse_json_criterion,
+                plan_model._criteria_definitions,
+            ),
+        ]
+
+        for key, parser, definition_list in definition_parsers:
+            self._parse_definition_list(data, key, parser, definition_list)
+
+    def _parse_definition_list(
+        self,
+        data: Dict[str, Any],
+        key: str,
+        parser: Callable[[Dict[str, Any]], Any],
+        definition_list: Any,
+    ) -> None:
+        """Parse a list of definitions using the provided parser function."""
+        if key in data:
+            for item_data in data[key]:
+                item = parser(item_data)
+                definition_list.append(item)
+
+    def _parse_json_plan_item(self, data: Dict[str, Any]) -> PlanItem:
+        """Parse plan item from JSON data."""
+        plan_item = PlanItem(
+            id=data["id"],
+            name=data.get("name"),
+            documentation=data.get("documentation"),
+            definition_ref=data.get("definitionRef"),
+            entry_criteria=data.get("entryCriteria", []),
+            exit_criteria=data.get("exitCriteria", []),
+            reactivation_criteria=data.get("reactivationCriteria", []),
+        )
+
+        if "itemControl" in data:
+            plan_item.item_control = self._parse_json_item_control(data["itemControl"])
+
+        return plan_item
+
+    def _parse_json_item_control(self, data: Dict[str, Any]) -> ItemControl:
+        """Parse item control from JSON data."""
+        return ItemControl(
+            required_rule=data.get("requiredRule"),
+            repetition_rule=data.get("repetitionRule"),
+            manual_activation_rule=data.get("manualActivationRule"),
+        )
+
+    def _parse_json_sentry(self, data: Dict[str, Any]) -> Sentry:
+        """Parse sentry from JSON data."""
+        sentry = Sentry(
+            id=data["id"],
+            name=data.get("name"),
+            documentation=data.get("documentation"),
+        )
+
+        if "onParts" in data:
+            sentry.on_parts = [
+                self._parse_json_on_part(on_part_data)
+                for on_part_data in data["onParts"]
+            ]
+
+        if "ifPart" in data:
+            sentry.if_part = self._parse_json_if_part(data["ifPart"])
+
+        return sentry
+
+    def _parse_json_on_part(self, data: Dict[str, Any]) -> OnPart:
+        """Parse on part from JSON data."""
+        return OnPart(
+            id=data["id"],
+            source_ref=data.get("sourceRef"),
+            standard_event=data.get("standardEvent"),
+        )
+
+    def _parse_json_if_part(self, data: Dict[str, Any]) -> IfPart:
+        """Parse if part from JSON data."""
+        return IfPart(id=data["id"], condition=data.get("condition"))
+
+    def _parse_json_task(
+        self, data: Dict[str, Any]
+    ) -> Union[HumanTask, ProcessTask, CaseTask]:
+        """Parse task from JSON data."""
+        base_attrs = {
+            "id": data["id"],
+            "name": data.get("name"),
+            "documentation": data.get("documentation"),
+            "is_blocking": data.get("isBlocking", True),
+        }
+
+        if "performer" in data:
+            return HumanTask(**base_attrs, performer=data["performer"])
+        elif "processRef" in data:
+            return ProcessTask(**base_attrs, process_ref=data["processRef"])
+        elif "caseRef" in data:
+            return CaseTask(**base_attrs, case_ref=data["caseRef"])
+        else:
+            return HumanTask(**base_attrs)
+
+    def _parse_json_event(
+        self, data: Dict[str, Any]
+    ) -> Union[TimerEventListener, UserEventListener]:
+        """Parse event listener from JSON data."""
+        base_attrs = {
+            "id": data["id"],
+            "name": data.get("name"),
+            "documentation": data.get("documentation"),
+        }
+
+        if "timerExpression" in data:
+            return TimerEventListener(
+                **base_attrs, timer_expression=data["timerExpression"]
+            )
+        elif "authorizedRoleRefs" in data:
+            return UserEventListener(
+                **base_attrs, authorized_role_refs=data["authorizedRoleRefs"]
+            )
+        else:
+            return UserEventListener(**base_attrs)
+
+    def _parse_json_milestone(self, data: Dict[str, Any]) -> Milestone:
+        """Parse milestone from JSON data."""
+        return Milestone(
+            id=data["id"],
+            name=data.get("name"),
+            documentation=data.get("documentation"),
+        )
+
+    def _parse_json_stage(self, data: Dict[str, Any]) -> Stage:
+        """Parse stage from JSON data."""
+        stage = Stage(
+            id=data["id"],
+            name=data.get("name"),
+            documentation=data.get("documentation"),
+            auto_complete=data.get("autoComplete", False),
+        )
+
+        if "planItems" in data:
+            stage.plan_items = [
+                self._parse_json_plan_item(item_data) for item_data in data["planItems"]
+            ]
+
+        if "sentries" in data:
+            stage.sentries = [
+                self._parse_json_sentry(sentry_data) for sentry_data in data["sentries"]
+            ]
+
+        if "caseFileItems" in data:
+            stage.case_file_items = [
+                self._parse_json_case_file_item(item_data)
+                for item_data in data["caseFileItems"]
+            ]
+
+        return stage
+
+    def _parse_json_criterion(
+        self, data: Dict[str, Any]
+    ) -> Union[EntryCriterion, ExitCriterion]:
+        """Parse criterion from JSON data."""
+        base_attrs = {
+            "id": data["id"],
+            "name": data.get("name"),
+            "documentation": data.get("documentation"),
+            "sentry_ref": data.get("sentryRef"),
+        }
+
+        # Determine criterion type based on the data or add a type field to the schema
+        if data.get("type") == "exit":
+            return ExitCriterion(**base_attrs)
+        else:
+            return EntryCriterion(**base_attrs)
+
+    def _parse_json_role(self, data: Dict[str, Any]) -> Role:
+        """Parse role from JSON data."""
+        return Role(id=data["id"], name=data.get("name"))

@@ -1,0 +1,28 @@
+{
+  "definitions": {
+    "targetNamespace": "http://example.com/cmmn",
+    "cases": [
+      {
+        "id": "SimpleCase",
+        "name": "Simple Case",
+        "casePlanModel": {
+          "id": "CasePlan",
+          "name": "Case Plan",
+          "planItems": [
+            {
+              "id": "Task1",
+              "name": "Review",
+              "definitionRef": "HumanTask1"
+            }
+          ],
+          "taskDefinitions": [
+            {
+              "id": "HumanTask1",
+              "name": "Review Document"
+            }
+          ]
+        }
+      }
+    ]
+  }
+}
