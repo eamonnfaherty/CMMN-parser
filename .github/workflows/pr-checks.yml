@@ -76,8 +76,6 @@ jobs:
       if: always()
       with:
         script: |
-          const { context } = require('@actions/core');
-          
           let comment = '## 🔍 PR Check Results\n\n';
           comment += '✅ Basic validation completed\n';
           comment += '📊 Full test suite will run on the main CI workflow\n\n';
