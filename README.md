@@ -187,34 +187,46 @@ except CMMNParseError as e:
 git clone https://github.com/eamonnfaherty/CMMN-parser.git
 cd CMMN-parser
 
-# Install dependencies
-uv sync --extra dev
+# Install development dependencies
+make install-dev
 
-# Run tests
-uv run pytest
+# See all available commands
+make help
+```
 
-# Run tests with coverage
-uv run pytest --cov=src/cmmn_parser --cov-report=html
+### Available Make Commands
 
-# Format code
-uv run black src/ tests/
-uv run isort src/ tests/
+```bash
+# Development workflow
+make install-dev     # Install development dependencies  
+make test           # Run tests
+make test-cov       # Run tests with coverage report
+make lint           # Run linting (flake8)
+make format         # Format code (black + isort)
+make type-check     # Run type checking (mypy)
 
-# Type checking
-uv run mypy src/cmmn_parser
+# CI commands (same as GitHub Actions)
+make ci             # Run full CI suite
+make pr-check       # Quick PR validation checks
+make security       # Run security checks
+
+# Build and release
+make build          # Build package
+make clean          # Clean build artifacts
+make pre-release    # Full pre-release validation
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-uv run pytest tests/ -v
+make test
 
-# Run specific test file
+# Run tests with coverage
+make test-cov
+
+# Run specific test file (using uv directly)
 uv run pytest tests/test_parser.py -v
-
-# Run with coverage
-uv run pytest --cov=src/cmmn_parser --cov-report=term-missing
 ```
 
 ## Contributing
@@ -222,15 +234,18 @@ uv run pytest --cov=src/cmmn_parser --cov-report=term-missing
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes and add tests
-4. Run the test suite: `uv run pytest`
+4. Run the test suite: `make ci`
 5. Submit a pull request
 
 Please ensure:
-- All tests pass
-- Code coverage remains high (>95%)
-- Code is formatted with Black and isort
-- Type hints are included
+- All tests pass: `make test`
+- Code coverage remains high (>95%): `make test-cov`
+- Code is formatted: `make format`
+- Type checking passes: `make type-check`
+- Linting passes: `make lint`
 - Documentation is updated as needed
+
+**Quick validation before submitting:** `make pr-check`
 
 ## License
 
