@@ -2,7 +2,7 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Any, Union
 
-from .models import (
+from cmmn_parser.models import (
     Case,
     CaseFileItem,
     CaseFileModel,

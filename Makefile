@@ -32,33 +32,33 @@ test: ## Run tests
 
 test-cov: ## Run tests with coverage report
 	@echo "$(CYAN)Running tests with coverage...$(NC)"
-	uv run pytest tests/ -v --cov=src/cmmn_parser --cov-report=term --cov-report=html
+	uv run pytest tests/ -v --cov=cmmn_parser --cov-report=term --cov-report=html
 
 test-cov-xml: ## Run tests with XML coverage report (for CI)
 	@echo "$(CYAN)Running tests with XML coverage...$(NC)"
-	uv run pytest tests/ -v --cov=src/cmmn_parser --cov-report=xml --cov-report=term
+	uv run pytest tests/ -v --cov=cmmn_parser --cov-report=xml --cov-report=term
 
 lint: ## Run linting (flake8)
 	@echo "$(CYAN)Running flake8 linting...$(NC)"
 	@echo "$(YELLOW)Checking for syntax errors and undefined names...$(NC)"
-	uv run flake8 src/cmmn_parser --count --select=E9,F63,F7,F82 --show-source --statistics
+	uv run flake8 cmmn_parser --count --select=E9,F63,F7,F82 --show-source --statistics
 	@echo "$(YELLOW)Running full linting...$(NC)"
-	uv run flake8 src/cmmn_parser --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+	uv run flake8 cmmn_parser --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
 format: ## Format code (black + isort)
 	@echo "$(CYAN)Formatting code with black...$(NC)"
-	uv run black src/cmmn_parser tests/
+	uv run black cmmn_parser tests/
 	@echo "$(CYAN)Sorting imports with isort...$(NC)"
-	uv run isort src/cmmn_parser tests/
+	uv run isort cmmn_parser tests/
 
 format-check: ## Check if code is properly formatted
 	@echo "$(CYAN)Checking code formatting...$(NC)"
-	uv run black --check src/cmmn_parser tests/
-	uv run isort --check-only src/cmmn_parser tests/
+	uv run black --check cmmn_parser tests/
+	uv run isort --check-only cmmn_parser tests/
 
 type-check: ## Run type checking (mypy)
 	@echo "$(CYAN)Running mypy type checking...$(NC)"
-	uv run mypy src/cmmn_parser --ignore-missing-imports
+	uv run mypy cmmn_parser --ignore-missing-imports
 
 security: ## Run security checks
 	@echo "$(CYAN)Running security checks...$(NC)"
@@ -102,8 +102,8 @@ pr-check: ## Run quick PR checks
 	@echo "$(YELLOW)Running quick tests...$(NC)"
 	uv run pytest tests/test_models.py -v
 	@echo "$(YELLOW)Checking formatting...$(NC)"
-	uv run black --check src/cmmn_parser tests/
-	uv run isort --check-only src/cmmn_parser tests/
+	uv run black --check cmmn_parser tests/
+	uv run isort --check-only cmmn_parser tests/
 	@echo "$(GREEN)✅ PR checks passed!$(NC)"
 
 dev-setup: install-dev ## Set up development environment

@@ -51,10 +51,10 @@ Repository = "https://github.com/eamonnfaherty/CMMN-parser"
 Issues = "https://github.com/eamonnfaherty/CMMN-parser/issues"
 
 [tool.setuptools.packages.find]
-where = ["src"]
+where = ["cmmn_parser"]
 
 [tool.setuptools.package-dir]
-"" = "src"
+"" = "cmmn_parser"
 
 [tool.black]
 line-length = 88
@@ -87,7 +87,7 @@ markers = [
 ]
 
 [tool.coverage.run]
-source = ["src/cmmn_parser"]
+source = ["cmmn_parser"]
 omit = [
     "*/tests/*",
     "*/__pycache__/*",
