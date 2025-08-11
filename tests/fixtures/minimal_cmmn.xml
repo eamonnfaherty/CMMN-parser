@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cmmn:definitions xmlns:cmmn="http://www.omg.org/spec/CMMN/20151109/MODEL"
+                   targetNamespace="http://example.com/minimal">
+  <cmmn:case id="MinimalCase">
+    <cmmn:casePlanModel id="MinimalPlan"/>
+  </cmmn:case>
+</cmmn:definitions>

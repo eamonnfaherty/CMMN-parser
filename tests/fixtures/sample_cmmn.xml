@@ -1,0 +1,98 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cmmn:definitions xmlns:cmmn="http://www.omg.org/spec/CMMN/20151109/MODEL"
+                   xmlns:cmmndi="http://www.omg.org/spec/CMMN/20151109/CMMNDI"
+                   xmlns:dc="http://www.omg.org/spec/CMMN/20151109/DC"
+                   xmlns:di="http://www.omg.org/spec/CMMN/20151109/DI"
+                   targetNamespace="http://example.com/cmmn"
+                   expressionLanguage="http://www.w3.org/1999/XPath"
+                   exporter="TestExporter"
+                   exporterVersion="1.0.0">
+
+  <cmmn:case id="Case_1" name="Test Case">
+    <cmmn:caseFileModel id="CaseFileModel_1">
+      <cmmn:caseFileItem id="CaseFileItem_1" name="Document" definitionType="http://example.com/Document" multiplicity="OneOrMore">
+        <cmmn:caseFileItem id="CaseFileItem_2" name="Attachment" definitionType="http://example.com/Attachment"/>
+      </cmmn:caseFileItem>
+      <cmmn:caseFileItem id="CaseFileItem_3" name="Customer" definitionType="http://example.com/Customer" sourceRef="external_source" targetRefs="target1 target2"/>
+    </cmmn:caseFileModel>
+
+    <cmmn:casePlanModel id="CasePlanModel_1" name="Main Case Plan" autoComplete="true">
+      
+      <!-- Plan Items -->
+      <cmmn:planItem id="PlanItem_1" name="Initial Stage" definitionRef="Stage_1" entryCriteriaRefs="EntryCriterion_1" exitCriteriaRefs="ExitCriterion_1">
+        <cmmn:itemControl>
+          <cmmn:requiredRule>
+            <cmmn:condition>true</cmmn:condition>
+          </cmmn:requiredRule>
+          <cmmn:repetitionRule>
+            <cmmn:condition>count &lt; 3</cmmn:condition>
+          </cmmn:repetitionRule>
+          <cmmn:manualActivationRule>
+            <cmmn:condition>userRequested</cmmn:condition>
+          </cmmn:manualActivationRule>
+        </cmmn:itemControl>
+      </cmmn:planItem>
+
+      <cmmn:planItem id="PlanItem_2" name="Human Task Item" definitionRef="HumanTask_1"/>
+      <cmmn:planItem id="PlanItem_3" name="Process Task Item" definitionRef="ProcessTask_1"/>
+      <cmmn:planItem id="PlanItem_4" name="Case Task Item" definitionRef="CaseTask_1"/>
+      <cmmn:planItem id="PlanItem_5" name="Milestone Item" definitionRef="Milestone_1"/>
+      <cmmn:planItem id="PlanItem_6" name="Timer Event Item" definitionRef="TimerEvent_1"/>
+      <cmmn:planItem id="PlanItem_7" name="User Event Item" definitionRef="UserEvent_1"/>
+
+      <!-- Sentries -->
+      <cmmn:sentry id="Sentry_1" name="Entry Sentry">
+        <cmmn:onPart id="OnPart_1" sourceRef="PlanItem_2">
+          <cmmn:standardEvent>complete</cmmn:standardEvent>
+        </cmmn:onPart>
+        <cmmn:ifPart id="IfPart_1">
+          <cmmn:condition>status == 'approved'</cmmn:condition>
+        </cmmn:ifPart>
+      </cmmn:sentry>
+
+      <cmmn:sentry id="Sentry_2" name="Exit Sentry">
+        <cmmn:onPart id="OnPart_2" sourceRef="PlanItem_5">
+          <cmmn:standardEvent>occur</cmmn:standardEvent>
+        </cmmn:onPart>
+      </cmmn:sentry>
+
+      <!-- Criteria -->
+      <cmmn:entryCriterion id="EntryCriterion_1" sentryRef="Sentry_1"/>
+      <cmmn:exitCriterion id="ExitCriterion_1" sentryRef="Sentry_2"/>
+
+      <!-- Nested Stage -->
+      <cmmn:stage id="Stage_1" name="Nested Stage" autoComplete="false">
+        <cmmn:planItem id="PlanItem_8" name="Nested Task" definitionRef="HumanTask_2"/>
+      </cmmn:stage>
+
+      <!-- Task Definitions -->
+      <cmmn:humanTask id="HumanTask_1" name="Review Document" isBlocking="true" performer="reviewer"/>
+      <cmmn:humanTask id="HumanTask_2" name="Nested Human Task" isBlocking="false"/>
+      <cmmn:processTask id="ProcessTask_1" name="Automated Processing" isBlocking="true" processRef="AutomationProcess"/>
+      <cmmn:caseTask id="CaseTask_1" name="Sub Case" isBlocking="true" caseRef="SubCase"/>
+
+      <!-- Event Definitions -->
+      <cmmn:timerEventListener id="TimerEvent_1" name="Deadline Timer">
+        <cmmn:timerExpression>PT2H</cmmn:timerExpression>
+      </cmmn:timerEventListener>
+
+      <cmmn:userEventListener id="UserEvent_1" name="User Intervention" authorizedRoleRefs="admin manager"/>
+
+      <!-- Milestone -->
+      <cmmn:milestone id="Milestone_1" name="Process Complete"/>
+
+      <!-- Case File Items in Stage -->
+      <cmmn:caseFileItem id="CaseFileItem_4" name="WorkingData" definitionType="http://example.com/WorkingData"/>
+
+    </cmmn:casePlanModel>
+
+    <!-- Case Roles -->
+    <cmmn:caseRoles>
+      <cmmn:role id="Role_1" name="reviewer"/>
+      <cmmn:role id="Role_2" name="admin"/>
+      <cmmn:role id="Role_3" name="manager"/>
+    </cmmn:caseRoles>
+
+  </cmmn:case>
+
+</cmmn:definitions>
