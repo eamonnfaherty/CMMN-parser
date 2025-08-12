@@ -1,0 +1,46 @@
+{
+    "id": "ProcessTasksExample",
+    "name": "Process Tasks Example",
+    "targetNamespace": "http://example.org/cmmn/processtasks",
+    "processes": [
+        {
+            "id": "creditCheckProcess",
+            "name": "Credit Check Process",
+            "description": "External credit verification process",
+            "isExecutable": true
+        },
+        {
+            "id": "notificationProcess",
+            "name": "Notification Process",
+            "description": "Customer notification process",
+            "isExecutable": true
+        }
+    ],
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Loan Application",
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Loan Processing Plan",
+                "autoComplete": false,
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Credit Check",
+                        "type": "processTask",
+                        "isBlocking": true,
+                        "processRef": "creditCheckProcess"
+                    },
+                    {
+                        "id": "task2",
+                        "name": "Send Notification",
+                        "type": "processTask",
+                        "isBlocking": false,
+                        "processRef": "notificationProcess"
+                    }
+                ]
+            }
+        }
+    ]
+}

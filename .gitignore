@@ -5,3 +5,4 @@ complexity-cc.json
 complexity-mi.json
 cmmn_parser/CMMN_parser.egg-info/
 .coverage
+ignored

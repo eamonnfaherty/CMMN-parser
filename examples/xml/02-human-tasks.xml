@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="HumanTasksExample"
+             name="Human Tasks Example"
+             targetNamespace="http://example.org/cmmn/humantasks">
+
+    <case id="case1" name="Document Review Process">
+        <casePlanModel id="cpm1" name="Document Review Plan" autoComplete="false">
+            <humanTask id="task1" name="Initial Review" isBlocking="true" performer="reviewer"/>
+            <humanTask id="task2" name="Management Approval" isBlocking="true" performer="manager"/>
+            <humanTask id="task3" name="Final Validation" isBlocking="false" performer="validator"/>
+        </casePlanModel>
+    </case>
+
+</definitions>

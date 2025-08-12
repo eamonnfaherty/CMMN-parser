@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="CaseFileItemsExample"
+             name="Case File Items Example"
+             targetNamespace="http://example.org/cmmn/casefileitems">
+
+    <!-- Case File Item Definitions -->
+    <caseFileItemDefinition id="customerDataDef" name="Customer Data" structureRef="CustomerType">
+        <definitiveProperty id="customerId"/>
+        <definitiveProperty id="customerName"/>
+    </caseFileItemDefinition>
+    
+    <caseFileItemDefinition id="applicationFormDef" name="Application Form" structureRef="ApplicationType">
+        <definitiveProperty id="applicationId"/>
+        <definitiveProperty id="submissionDate"/>
+    </caseFileItemDefinition>
+    
+    <caseFileItemDefinition id="approvalDocDef" name="Approval Document" structureRef="ApprovalType">
+        <definitiveProperty id="approvalId"/>
+        <definitiveProperty id="approvedBy"/>
+    </caseFileItemDefinition>
+
+    <case id="case1" name="Customer Onboarding">
+        <!-- Case File Model -->
+        <caseFileModel>
+            <caseFileItem id="customerData" definitionRef="customerDataDef"/>
+            <caseFileItem id="applicationForm" definitionRef="applicationFormDef"/>
+            <caseFileItem id="approvalDoc" definitionRef="approvalDocDef"/>
+        </caseFileModel>
+        
+        <casePlanModel id="cpm1" name="Onboarding Plan" autoComplete="false">
+            <planItem id="pi1" name="Collect Customer Data" definitionRef="task1"/>
+            <planItem id="pi2" name="Process Application" definitionRef="task2"/>
+            <planItem id="pi3" name="Generate Approval" definitionRef="task3"/>
+            
+            <humanTask id="task1" name="Collect Customer Data" isBlocking="true"/>
+            <processTask id="task2" name="Process Application" isBlocking="true"/>
+            <humanTask id="task3" name="Generate Approval" isBlocking="true"/>
+        </casePlanModel>
+    </case>
+
+</definitions>

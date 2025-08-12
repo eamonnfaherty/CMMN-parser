@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="SentriesCriteriaExample"
+             name="Sentries and Criteria Example"
+             targetNamespace="http://example.org/cmmn/sentries">
+
+    <case id="case1" name="Order Processing with Conditions">
+        <casePlanModel id="cpm1" name="Order Processing Plan" autoComplete="false">
+            
+            <!-- Plan Items -->
+            <planItem id="pi1" name="Validate Order" definitionRef="task1"/>
+            <planItem id="pi2" name="Check Inventory" definitionRef="task2" entryCriteriaRefs="sentry1"/>
+            <planItem id="pi3" name="Process Payment" definitionRef="task3" entryCriteriaRefs="sentry2"/>
+            <planItem id="pi4" name="Ship Order" definitionRef="task4" entryCriteriaRefs="sentry3"/>
+            <planItem id="pi5" name="Cancel Order" definitionRef="task5" entryCriteriaRefs="sentry4"/>
+            
+            <!-- Tasks -->
+            <humanTask id="task1" name="Validate Order" isBlocking="true"/>
+            <task id="task2" name="Check Inventory" isBlocking="true"/>
+            <processTask id="task3" name="Process Payment" isBlocking="true"/>
+            <task id="task4" name="Ship Order" isBlocking="true"/>
+            <humanTask id="task5" name="Cancel Order" isBlocking="true"/>
+            
+            <!-- Sentries (Entry/Exit Criteria) -->
+            <sentry id="sentry1" name="Order Validated">
+                <planItemOnPart id="onPart1" sourceRef="pi1">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+            
+            <sentry id="sentry2" name="Inventory Available">
+                <planItemOnPart id="onPart2" sourceRef="pi2">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+                <ifPart>
+                    <condition>inventory > 0</condition>
+                </ifPart>
+            </sentry>
+            
+            <sentry id="sentry3" name="Payment Processed">
+                <planItemOnPart id="onPart3" sourceRef="pi3">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+            
+            <sentry id="sentry4" name="Order Invalid or No Inventory">
+                <planItemOnPart id="onPart4" sourceRef="pi1">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+                <ifPart>
+                    <condition>orderStatus == 'invalid' || inventory == 0</condition>
+                </ifPart>
+            </sentry>
+            
+        </casePlanModel>
+    </case>
+
+</definitions>

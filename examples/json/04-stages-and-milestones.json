@@ -1,0 +1,112 @@
+{
+    "id": "StagesMilestonesExample",
+    "name": "Stages and Milestones Example",
+    "targetNamespace": "http://example.org/cmmn/stages",
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Insurance Claim Processing",
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Claim Processing Plan",
+                "autoComplete": false,
+                "planItems": [
+                    {
+                        "id": "pi1",
+                        "name": "Collect Documents",
+                        "definitionRef": "task1"
+                    },
+                    {
+                        "id": "pi2",
+                        "name": "Verify Information",
+                        "definitionRef": "task2"
+                    },
+                    {
+                        "id": "pi3",
+                        "name": "Field Investigation",
+                        "definitionRef": "task3"
+                    },
+                    {
+                        "id": "pi4",
+                        "name": "Expert Review",
+                        "definitionRef": "task4"
+                    }
+                ],
+                "stages": [
+                    {
+                        "id": "stage1",
+                        "name": "Initial Assessment",
+                        "autoComplete": false,
+                        "planItems": [
+                            {
+                                "id": "pi1",
+                                "name": "Collect Documents",
+                                "definitionRef": "task1"
+                            },
+                            {
+                                "id": "pi2",
+                                "name": "Verify Information",
+                                "definitionRef": "task2"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "stage2",
+                        "name": "Investigation",
+                        "autoComplete": false,
+                        "planItems": [
+                            {
+                                "id": "pi3",
+                                "name": "Field Investigation",
+                                "definitionRef": "task3"
+                            },
+                            {
+                                "id": "pi4",
+                                "name": "Expert Review",
+                                "definitionRef": "task4"
+                            }
+                        ]
+                    }
+                ],
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Collect Documents",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task2",
+                        "name": "Verify Information",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task3",
+                        "name": "Field Investigation",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task4",
+                        "name": "Expert Review",
+                        "type": "humanTask",
+                        "isBlocking": false
+                    }
+                ],
+                "milestones": [
+                    {
+                        "id": "milestone1",
+                        "name": "Assessment Complete",
+                        "description": "All initial assessment tasks completed"
+                    },
+                    {
+                        "id": "milestone2",
+                        "name": "Investigation Complete",
+                        "description": "Investigation phase finished"
+                    }
+                ]
+            }
+        }
+    ]
+}

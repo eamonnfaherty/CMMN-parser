@@ -1,110 +1,48 @@
-from pathlib import Path
-from typing import Any, Dict, Union
+"""CMMN Parser Library
 
-from .models import (
-    Association,
-    Case,
-    CaseFileItem,
-    CaseFileModel,
-    CasePlanModel,
-    CaseTask,
-    CMMNDefinition,
-    CMMNElementType,
-    EntryCriterion,
-    EventListener,
-    ExitCriterion,
-    HumanTask,
-    IfPart,
-    ItemControl,
-    Milestone,
-    OnPart,
-    PlanItem,
-    PlanItemLifecycleState,
-    ProcessTask,
-    ReactivationCriterion,
-    Role,
-    Sentry,
-    Stage,
-    Task,
-    TimerEventListener,
-    UserEventListener,
-)
-from .parser import CMMNParseError, CMMNParser
-from .validation import (
-    get_schema_info,
-    get_validation_errors,
-    validate_cmmn_json,
-    validate_cmmn_json_file,
-)
+A parsing library for CMMN (Case Management Model and Notation) with XML and JSON support.
+"""
+
+from .exceptions import CMMNParsingError, CMMNValidationError
+from .models import CMMNDefinitions
+from .parser import CMMNParser
 
 __version__ = "0.1.0"
-__all__ = [
-    # Core classes and parsing
-    "CMMNParser",
-    "CMMNParseError",
-    "CMMNDefinition",
-    # Validation functions
-    "validate_cmmn_json",
-    "validate_cmmn_json_file",
-    "get_validation_errors",
-    "get_schema_info",
-    # Convenience functions
-    "parse_cmmn_file",
-    "parse_cmmn_string",
-    "parse_cmmn_json",
-    "parse_cmmn_json_file",
-    # Model classes
-    "Case",
-    "CasePlanModel",
-    "CaseFileModel",
-    "CaseFileItem",
-    "Stage",
-    "Task",
-    "HumanTask",
-    "ProcessTask",
-    "CaseTask",
-    "Milestone",
-    "EventListener",
-    "TimerEventListener",
-    "UserEventListener",
-    "Sentry",
-    "OnPart",
-    "IfPart",
-    "EntryCriterion",
-    "ExitCriterion",
-    "ReactivationCriterion",
-    "PlanItem",
-    "ItemControl",
-    "Association",
-    "Role",
-    "CMMNElementType",
-    "PlanItemLifecycleState",
-]
+__all__ = ["CMMNParser", "CMMNDefinitions", "CMMNParsingError", "CMMNValidationError"]
 
 
-def parse_cmmn_file(file_path: Union[str, Path]) -> CMMNDefinition:
-    """Convenience function to parse a CMMN file (XML or JSON)."""
+def parse_cmmn_string(content: str, format_type: str = "auto") -> CMMNDefinitions:
+    """Convenience function to parse CMMN content from a string.
+
+    Args:
+        content: The CMMN content as a string
+        format_type: The format type ('xml', 'json', or 'auto')
+
+    Returns:
+        CMMNDefinitions: Parsed CMMN definitions
+
+    Raises:
+        CMMNParsingError: If parsing fails
+        CMMNValidationError: If validation fails
+    """
     parser = CMMNParser()
-    return parser.parse_file(file_path)
+    return parser.parse_string(content, format_type)
 
 
-def parse_cmmn_string(cmmn_text: str) -> CMMNDefinition:
-    """Convenience function to parse CMMN text (XML or JSON auto-detected)."""
+def parse_cmmn_file(file_path: str, format_type: str = "auto") -> CMMNDefinitions:
+    """Convenience function to parse CMMN content from a file.
+
+    Args:
+        file_path: Path to the CMMN file
+        format_type: The format type ('xml', 'json', or 'auto')
+
+    Returns:
+        CMMNDefinitions: Parsed CMMN definitions
+
+    Raises:
+        CMMNParsingError: If parsing fails
+        CMMNValidationError: If validation fails
+        FileNotFoundError: If file doesn't exist
+    """
     parser = CMMNParser()
-    return parser.parse_string(cmmn_text)
-
-
-def parse_cmmn_json(cmmn_json: Union[str, Dict[str, Any]]) -> CMMNDefinition:
-    """Convenience function to parse CMMN JSON data."""
-    parser = CMMNParser()
-    if isinstance(cmmn_json, dict):
-        import json
-
-        cmmn_json = json.dumps(cmmn_json)
-    return parser.parse_json_string(cmmn_json)
-
-
-def parse_cmmn_json_file(file_path: Union[str, Path]) -> CMMNDefinition:
-    """Convenience function to parse a CMMN JSON file."""
-    parser = CMMNParser()
-    return parser.parse_json_file(file_path)
+    return parser.parse_file(file_path, format_type)

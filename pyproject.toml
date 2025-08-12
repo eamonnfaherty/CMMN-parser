@@ -28,9 +28,9 @@ classifiers = [
 keywords = ["cmmn", "parser", "case-management", "notation", "xml", "json", "schema", "validation"]
 requires-python = ">=3.8"
 dependencies = [
+    "jsonschema>=4.23.0",
     "lxml>=4.6.0",
-    "typing-extensions>=4.0.0",
-    "jsonschema>=4.0.0"
+    "typing-extensions>=4.0.0"
 ]
 
 [project.optional-dependencies]

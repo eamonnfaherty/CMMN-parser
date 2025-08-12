@@ -1,0 +1,379 @@
+{
+  "definitions": {
+    "id": "EnterpriseExample",
+    "name": "Enterprise CMMN Example",
+    "targetNamespace": "http://enterprise.example.com/cmmn",
+    "expressionLanguage": "http://www.w3.org/1999/XPath",
+    "exporter": "Enterprise CMMN Modeler",
+    "exporterVersion": "2.0.0",
+    "author": "Enterprise Architect",
+    "creationDate": "2023-12-01T10:00:00Z",
+    "imports": [
+      {
+        "location": "../shared/common-processes.cmmn",
+        "importType": "http://www.omg.org/spec/CMMN/20151109/MODEL",
+        "namespace": "http://shared.example.com/processes"
+      }
+    ],
+    "caseFileItemDefinitions": [
+      {
+        "id": "CustomerDataDef",
+        "name": "Customer Data Definition",
+        "definitionType": "XSDComplexType",
+        "structureRef": "http://schemas.example.com/Customer",
+        "properties": [
+          {
+            "id": "customerIdProp",
+            "name": "customerId",
+            "type": "string"
+          },
+          {
+            "id": "customerNameProp", 
+            "name": "customerName",
+            "type": "string"
+          },
+          {
+            "id": "priorityProp",
+            "name": "priority",
+            "type": "string"
+          }
+        ]
+      },
+      {
+        "id": "DocumentDef",
+        "name": "Document Definition",
+        "definitionType": "CMISDocument",
+        "structureRef": "http://cmis.example.com/Document"
+      }
+    ],
+    "cases": [
+      {
+        "id": "CustomerOnboardingCase",
+        "name": "Customer Onboarding Process",
+        "documentation": [
+          {
+            "text": "Comprehensive customer onboarding process with decision integration and advanced planning."
+          }
+        ],
+        "caseFileModel": {
+          "id": "OnboardingCaseFile",
+          "caseFileItems": [
+            {
+              "id": "CustomerData",
+              "name": "Customer Information",
+              "definitionRef": "CustomerDataDef",
+              "multiplicity": "ExactlyOne"
+            },
+            {
+              "id": "Documents",
+              "name": "Supporting Documents",
+              "definitionRef": "DocumentDef", 
+              "multiplicity": "OneOrMore",
+              "children": [
+                {
+                  "id": "IdentityDoc",
+                  "name": "Identity Document",
+                  "definitionRef": "DocumentDef",
+                  "multiplicity": "ExactlyOne"
+                },
+                {
+                  "id": "ProofOfAddress",
+                  "name": "Proof of Address",
+                  "definitionRef": "DocumentDef",
+                  "multiplicity": "ZeroOrOne"
+                }
+              ]
+            }
+          ]
+        },
+        "casePlanModel": {
+          "id": "OnboardingPlan",
+          "name": "Customer Onboarding Plan",
+          "autoComplete": false,
+          "planItems": [
+            {
+              "id": "DataCollectionStage",
+              "name": "Data Collection Stage",
+              "definitionRef": "DataCollectionStageDefinition",
+              "entryCriteria": ["StartCriterion"],
+              "itemControl": {
+                "id": "DataCollectionControl",
+                "requiredRule": {
+                  "id": "DataRequiredRule",
+                  "name": "Data Collection Required",
+                  "condition": {
+                    "language": "http://www.w3.org/1999/XPath",
+                    "body": "true()"
+                  }
+                }
+              }
+            },
+            {
+              "id": "RiskAssessmentTask",
+              "name": "Risk Assessment",
+              "definitionRef": "RiskAssessmentDecision",
+              "entryCriteria": ["DataReadyCriterion"],
+              "exitCriteria": ["RiskCompleteCriterion"]
+            },
+            {
+              "id": "ApprovalTask",
+              "name": "Manager Approval",
+              "definitionRef": "ApprovalHumanTask",
+              "entryCriteria": ["RiskCompleteCriterion"]
+            }
+          ],
+          "sentries": [
+            {
+              "id": "StartSentry",
+              "name": "Case Start Sentry",
+              "onParts": [
+                {
+                  "id": "CustomerDataCreated",
+                  "sourceRef": "CustomerData",
+                  "standardEvent": "create"
+                }
+              ]
+            },
+            {
+              "id": "DataReadySentry", 
+              "name": "Data Ready Sentry",
+              "onParts": [
+                {
+                  "id": "DataStageComplete",
+                  "sourceRef": "DataCollectionStage",
+                  "standardEvent": "complete"
+                }
+              ],
+              "ifPart": {
+                "id": "DataValidCondition",
+                "condition": {
+                  "language": "http://www.w3.org/1999/XPath",
+                  "body": "count($CustomerData/requiredFields[text()]) >= 3"
+                },
+                "contextRef": "CustomerData"
+              }
+            },
+            {
+              "id": "RiskCompleteSentry",
+              "name": "Risk Assessment Complete",
+              "onParts": [
+                {
+                  "id": "RiskTaskComplete", 
+                  "sourceRef": "RiskAssessmentTask",
+                  "standardEvent": "complete"
+                }
+              ]
+            }
+          ],
+          "taskDefinitions": [
+            {
+              "id": "ApprovalHumanTask",
+              "name": "Manager Approval Task",
+              "performer": "manager",
+              "isBlocking": true,
+              "input": [
+                {
+                  "id": "CustomerInput",
+                  "name": "customer",
+                  "bindingRef": "CustomerData"
+                },
+                {
+                  "id": "RiskInput",
+                  "name": "riskScore",
+                  "bindingRef": "RiskResult"
+                }
+              ],
+              "output": [
+                {
+                  "id": "ApprovalOutput",
+                  "name": "approvalStatus"
+                }
+              ],
+              "planningTable": {
+                "id": "ApprovalPlanning",
+                "tableItems": [
+                  {
+                    "id": "AdditionalReviewItem",
+                    "name": "Additional Review",
+                    "definitionRef": "AdditionalReviewTask",
+                    "authorizedRoleRefs": ["senior-manager"],
+                    "applicabilityRuleRefs": ["HighRiskRule"]
+                  }
+                ],
+                "applicabilityRules": [
+                  {
+                    "id": "HighRiskRule",
+                    "name": "High Risk Customer Rule",
+                    "condition": {
+                      "body": "$riskScore > 7"
+                    },
+                    "contextRef": "RiskResult"
+                  }
+                ]
+              }
+            },
+            {
+              "id": "AdditionalReviewTask",
+              "name": "Additional Senior Review",
+              "performer": "senior-manager"
+            }
+          ],
+          "eventDefinitions": [
+            {
+              "id": "OnboardingDeadline",
+              "name": "Onboarding Deadline Timer",
+              "timerExpression": {
+                "language": "http://www.w3.org/1999/XPath",
+                "body": "PT72H"
+              },
+              "timerStart": {
+                "caseFileItemStartTrigger": {
+                  "id": "CustomerCreatedTrigger",
+                  "sourceRef": "CustomerData",
+                  "standardEvent": "create"
+                }
+              }
+            },
+            {
+              "id": "ManagerEscalation",
+              "name": "Manager Escalation Event", 
+              "authorizedRoleRefs": ["manager", "senior-manager"]
+            }
+          ],
+          "milestoneDefinitions": [
+            {
+              "id": "OnboardingComplete",
+              "name": "Customer Onboarding Complete"
+            }
+          ],
+          "stageDefinitions": [
+            {
+              "id": "DataCollectionStageDefinition",
+              "name": "Data Collection Stage",
+              "autoComplete": true,
+              "planItems": [
+                {
+                  "id": "CollectPersonalInfo",
+                  "name": "Collect Personal Information",
+                  "definitionRef": "PersonalInfoTask"
+                },
+                {
+                  "id": "CollectDocuments",
+                  "name": "Collect Documents",
+                  "definitionRef": "DocumentCollectionTask"
+                }
+              ]
+            }
+          ],
+          "criteriaDefinitions": [
+            {
+              "id": "StartCriterion",
+              "name": "Start Criterion",
+              "sentryRef": "StartSentry",
+              "type": "entry"
+            },
+            {
+              "id": "DataReadyCriterion",
+              "name": "Data Ready Criterion", 
+              "sentryRef": "DataReadySentry",
+              "type": "entry"
+            },
+            {
+              "id": "RiskCompleteCriterion",
+              "name": "Risk Complete Criterion",
+              "sentryRef": "RiskCompleteSentry", 
+              "type": "entry"
+            }
+          ]
+        },
+        "caseRoles": [
+          {
+            "id": "ManagerRole",
+            "name": "manager"
+          },
+          {
+            "id": "SeniorManagerRole", 
+            "name": "senior-manager"
+          },
+          {
+            "id": "CustomerServiceRole",
+            "name": "customer-service"
+          }
+        ]
+      }
+    ],
+    "processes": [
+      {
+        "id": "BackgroundCheckProcess",
+        "name": "Background Check Process",
+        "implementationType": "http://www.omg.org/spec/BPMN/20100524/MODEL",
+        "implementation": "background-check.bpmn",
+        "input": [
+          {
+            "id": "CustomerIdInput",
+            "name": "customerId"
+          }
+        ],
+        "output": [
+          {
+            "id": "BackgroundResultOutput",
+            "name": "backgroundResult"
+          }
+        ]
+      }
+    ],
+    "decisions": [
+      {
+        "id": "RiskAssessmentDecision",
+        "name": "Customer Risk Assessment",
+        "implementationType": "http://www.omg.org/spec/DMN/20151101/dmn.xsd",
+        "implementation": "risk-assessment.dmn",
+        "input": [
+          {
+            "id": "CustomerDataInput",
+            "name": "customerData",
+            "bindingRef": "CustomerData"
+          }
+        ],
+        "output": [
+          {
+            "id": "RiskScoreOutput",
+            "name": "riskScore"
+          },
+          {
+            "id": "RiskCategoryOutput",
+            "name": "riskCategory"
+          }
+        ]
+      }
+    ],
+    "relationships": [
+      {
+        "id": "ProcessDependency",
+        "type": "dependency",
+        "direction": "Forward",
+        "source": ["CustomerOnboardingCase"],
+        "target": ["BackgroundCheckProcess"]
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "ProcessNote",
+        "type": "textAnnotation",
+        "text": "This is a comprehensive enterprise onboarding process that demonstrates all CMMN 1.1 features including decision integration, planning tables, and advanced sentry configurations."
+      }
+    ],
+    "extensionElements": {
+      "extensions": [
+        {
+          "namespace": "http://enterprise.example.com/extensions",
+          "elements": {
+            "auditTrail": true,
+            "complianceLevel": "SOX",
+            "dataRetentionPeriod": "P7Y"
+          }
+        }
+      ]
+    }
+  }
+}

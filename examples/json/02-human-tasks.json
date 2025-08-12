@@ -1,0 +1,39 @@
+{
+    "id": "HumanTasksExample",
+    "name": "Human Tasks Example",
+    "targetNamespace": "http://example.org/cmmn/humantasks",
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Document Review Process",
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Document Review Plan",
+                "autoComplete": false,
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Initial Review",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "reviewer"
+                    },
+                    {
+                        "id": "task2",
+                        "name": "Management Approval",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "manager"
+                    },
+                    {
+                        "id": "task3",
+                        "name": "Final Validation",
+                        "type": "humanTask",
+                        "isBlocking": false,
+                        "performer": "validator"
+                    }
+                ]
+            }
+        }
+    ]
+}

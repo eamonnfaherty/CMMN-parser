@@ -1,0 +1,24 @@
+{
+    "id": "BasicCaseExample",
+    "name": "Basic Case Example",
+    "targetNamespace": "http://example.org/cmmn/basic",
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Simple Task Case",
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Simple Case Plan",
+                "autoComplete": false,
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Review Application",
+                        "type": "task",
+                        "isBlocking": true
+                    }
+                ]
+            }
+        }
+    ]
+}

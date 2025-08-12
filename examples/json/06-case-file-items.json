@@ -1,0 +1,78 @@
+{
+    "id": "CaseFileItemsExample",
+    "name": "Case File Items Example",
+    "targetNamespace": "http://example.org/cmmn/casefileitems",
+    "caseFileItemDefinitions": [
+        {
+            "id": "customerDataDef",
+            "name": "Customer Data",
+            "structureRef": "CustomerType",
+            "definitiveProperty": ["customerId", "customerName"]
+        },
+        {
+            "id": "applicationFormDef",
+            "name": "Application Form",
+            "structureRef": "ApplicationType",
+            "definitiveProperty": ["applicationId", "submissionDate"]
+        },
+        {
+            "id": "approvalDocDef",
+            "name": "Approval Document",
+            "structureRef": "ApprovalType",
+            "definitiveProperty": ["approvalId", "approvedBy"]
+        }
+    ],
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Customer Onboarding",
+            "caseFileModel": {
+                "id": "cfm1",
+                "name": "Onboarding Case File",
+                "caseFileItems": ["customerData", "applicationForm", "approvalDoc"]
+            },
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Onboarding Plan",
+                "autoComplete": false,
+                "planItems": [
+                    {
+                        "id": "pi1",
+                        "name": "Collect Customer Data",
+                        "definitionRef": "task1"
+                    },
+                    {
+                        "id": "pi2",
+                        "name": "Process Application",
+                        "definitionRef": "task2"
+                    },
+                    {
+                        "id": "pi3",
+                        "name": "Generate Approval",
+                        "definitionRef": "task3"
+                    }
+                ],
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Collect Customer Data",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task2",
+                        "name": "Process Application",
+                        "type": "processTask",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task3",
+                        "name": "Generate Approval",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    }
+                ]
+            }
+        }
+    ]
+}
