@@ -1,331 +1,272 @@
-import xml.etree.ElementTree as ET
+"""CMMN Parser
+
+Main parsing functionality for CMMN XML and JSON formats.
+"""
+
+import json
+import os
 from pathlib import Path
-from typing import Any, Union
 
-from cmmn_parser.models import (
-    Case,
-    CaseFileItem,
-    CaseFileModel,
-    CasePlanModel,
-    CaseTask,
-    CMMNDefinition,
-    EntryCriterion,
-    ExitCriterion,
-    HumanTask,
-    IfPart,
-    ItemControl,
-    Milestone,
-    OnPart,
-    PlanItem,
-    ProcessTask,
-    Role,
-    Sentry,
-    Stage,
-    TimerEventListener,
-    UserEventListener,
-)
-
-
-class CMMNParseError(Exception):
-    pass
+from .exceptions import CMMNFileError, CMMNParsingError, CMMNValidationError
+from .json_parser import JSONParser
+from .models import CMMNDefinitions
+from .validator import CMMNValidator
+from .xml_parser import XMLParser
 
 
 class CMMNParser:
-    CMMN_NAMESPACE = "http://www.omg.org/spec/CMMN/20151109/MODEL"
+    """Main CMMN parser supporting both XML and JSON formats."""
 
     def __init__(self) -> None:
-        self.namespaces = {
-            "cmmn": self.CMMN_NAMESPACE,
-            "cmmndi": "http://www.omg.org/spec/CMMN/20151109/CMMNDI",
-            "dc": "http://www.omg.org/spec/CMMN/20151109/DC",
-            "di": "http://www.omg.org/spec/CMMN/20151109/DI",
-        }
+        """Initialize the CMMN parser."""
+        self.xml_parser = XMLParser()
+        self.json_parser = JSONParser()
+        self.validator = CMMNValidator()
 
-    def parse_file(self, file_path: Union[str, Path]) -> CMMNDefinition:
+    def parse_string(self, content: str, format_type: str = "auto") -> CMMNDefinitions:
+        """Parse CMMN content from a string.
+
+        Args:
+            content: The CMMN content as a string
+            format_type: The format type ('xml', 'json', or 'auto')
+
+        Returns:
+            CMMNDefinitions: Parsed CMMN definitions
+
+        Raises:
+            CMMNParsingError: If parsing fails
+            CMMNValidationError: If validation fails
+        """
+        if not content or not content.strip():
+            raise CMMNParsingError("Content cannot be empty")
+
+        detected_format = self._detect_format(content, format_type)
+
+        if detected_format == "xml":
+            return self.parse_xml_string(content)
+        elif detected_format == "json":
+            return self.parse_json_string(content)
+        else:
+            raise CMMNParsingError(f"Unable to determine format: {format_type}")
+
+    def parse_file(self, file_path: str, format_type: str = "auto") -> CMMNDefinitions:
+        """Parse CMMN content from a file.
+
+        Args:
+            file_path: Path to the CMMN file
+            format_type: The format type ('xml', 'json', or 'auto')
+
+        Returns:
+            CMMNDefinitions: Parsed CMMN definitions
+
+        Raises:
+            CMMNParsingError: If parsing fails
+            CMMNValidationError: If validation fails
+            FileNotFoundError: If file doesn't exist
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
+
         try:
-            tree = ET.parse(str(file_path))
-            return self._parse_tree(tree)
-        except ET.ParseError as e:
-            raise CMMNParseError(f"Failed to parse CMMN file: {e}")
-        except FileNotFoundError:
-            raise CMMNParseError(f"CMMN file not found: {file_path}")
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            raise CMMNFileError(f"Error reading file {file_path}: {e}")
 
-    def parse_string(self, cmmn_text: str) -> CMMNDefinition:
+        if format_type == "auto":
+            format_type = self._detect_format_from_path(file_path)
+
+        return self.parse_string(content, format_type)
+
+    def parse_xml_string(self, xml_content: str) -> CMMNDefinitions:
+        """Parse CMMN content from an XML string.
+
+        Args:
+            xml_content: The XML content as a string
+
+        Returns:
+            CMMNDefinitions: Parsed CMMN definitions
+
+        Raises:
+            CMMNParsingError: If XML parsing fails
+            CMMNValidationError: If XML validation fails
+        """
         try:
-            root = ET.fromstring(cmmn_text)
-            tree = ET.ElementTree(root)
-            return self._parse_tree(tree)
-        except ET.ParseError as e:
-            raise CMMNParseError(f"Failed to parse CMMN text: {e}")
+            return self.xml_parser.parse(xml_content)
+        except Exception as e:
+            raise CMMNParsingError(f"Failed to parse XML: {e}")
 
-    def _parse_tree(self, tree: Any) -> CMMNDefinition:
-        root = tree.getroot()
+    def parse_xml_file(self, file_path: str) -> CMMNDefinitions:
+        """Parse CMMN content from an XML file.
 
-        if root is None:
-            raise CMMNParseError("No root element found")
+        Args:
+            file_path: Path to the XML file
 
-        if root.tag != f"{{{self.CMMN_NAMESPACE}}}definitions":
-            raise CMMNParseError("Root element must be 'definitions'")
+        Returns:
+            CMMNDefinitions: Parsed CMMN definitions
 
-        definition = CMMNDefinition(
-            target_namespace=root.get("targetNamespace"),
-            expression_language=root.get("expressionLanguage"),
-            exporter=root.get("exporter"),
-            exporter_version=root.get("exporterVersion"),
-        )
+        Raises:
+            CMMNParsingError: If parsing fails
+            FileNotFoundError: If file doesn't exist
+        """
+        return self.parse_file(file_path, "xml")
 
-        for case_elem in root.findall("cmmn:case", self.namespaces):
-            case = self._parse_case(case_elem)
-            definition.cases.append(case)
+    def parse_json_string(self, json_content: str) -> CMMNDefinitions:
+        """Parse CMMN content from a JSON string.
 
-        return definition
+        Args:
+            json_content: The JSON content as a string
 
-    def _parse_case(self, case_elem: ET.Element) -> Case:
-        case = Case(id=case_elem.get("id", ""), name=case_elem.get("name"))
+        Returns:
+            CMMNDefinitions: Parsed CMMN definitions
 
-        case_file_model_elem = case_elem.find("cmmn:caseFileModel", self.namespaces)
-        if case_file_model_elem is not None:
-            case.case_file_model = self._parse_case_file_model(case_file_model_elem)
+        Raises:
+            CMMNParsingError: If JSON parsing fails
+            CMMNValidationError: If JSON validation fails
+        """
+        try:
+            data = json.loads(json_content)
+            return self.json_parser.parse(data)
+        except json.JSONDecodeError as e:
+            raise CMMNParsingError(f"Invalid JSON: {e}")
+        except Exception as e:
+            raise CMMNParsingError(f"Failed to parse JSON: {e}")
 
-        case_plan_model_elem = case_elem.find("cmmn:casePlanModel", self.namespaces)
-        if case_plan_model_elem is not None:
-            case.case_plan_model = self._parse_case_plan_model(case_plan_model_elem)
+    def parse_json_file(self, file_path: str) -> CMMNDefinitions:
+        """Parse CMMN content from a JSON file.
 
-        for role_elem in case_elem.findall("cmmn:caseRoles/cmmn:role", self.namespaces):
-            role = Role(id=role_elem.get("id", ""), name=role_elem.get("name"))
-            case.case_roles.append(role)
+        Args:
+            file_path: Path to the JSON file
 
-        return case
+        Returns:
+            CMMNDefinitions: Parsed CMMN definitions
 
-    def _parse_case_file_model(self, file_model_elem: ET.Element) -> CaseFileModel:
-        file_model = CaseFileModel(id=file_model_elem.get("id", ""))
+        Raises:
+            CMMNParsingError: If parsing fails
+            FileNotFoundError: If file doesn't exist
+        """
+        return self.parse_file(file_path, "json")
 
-        for item_elem in file_model_elem.findall("cmmn:caseFileItem", self.namespaces):
-            item = self._parse_case_file_item(item_elem)
-            file_model.case_file_items.append(item)
+    def validate_xml_string(self, xml_content: str) -> bool:
+        """Validate XML CMMN content against the XSD schema.
 
-        return file_model
+        Args:
+            xml_content: The XML content as a string
 
-    def _parse_case_file_item(self, item_elem: ET.Element) -> CaseFileItem:
-        item = CaseFileItem(
-            id=item_elem.get("id", ""),
-            name=item_elem.get("name"),
-            definition_type=item_elem.get("definitionType"),
-            multiplicity=item_elem.get("multiplicity"),
-            source_ref=item_elem.get("sourceRef"),
-        )
+        Returns:
+            bool: True if valid
 
-        target_refs = item_elem.get("targetRefs", "")
-        if target_refs:
-            item.target_refs = target_refs.split()
+        Raises:
+            CMMNValidationError: If validation fails
+        """
+        return self.validator.validate_xml(xml_content)
 
-        for child_elem in item_elem.findall("cmmn:caseFileItem", self.namespaces):
-            child_item = self._parse_case_file_item(child_elem)
-            item.children.append(child_item)
+    def validate_xml_file(self, file_path: str) -> bool:
+        """Validate XML CMMN file against the XSD schema.
 
-        return item
+        Args:
+            file_path: Path to the XML file
 
-    def _parse_case_plan_model(self, plan_model_elem: ET.Element) -> CasePlanModel:
-        plan_model = CasePlanModel(
-            id=plan_model_elem.get("id", ""),
-            name=plan_model_elem.get("name"),
-            auto_complete=plan_model_elem.get("autoComplete", "false").lower()
-            == "true",
-        )
+        Returns:
+            bool: True if valid
 
-        self._parse_stage_content(plan_model_elem, plan_model)
-        self._parse_task_definitions(plan_model_elem, plan_model)
-        self._parse_event_definitions(plan_model_elem, plan_model)
-        self._parse_milestone_definitions(plan_model_elem, plan_model)
-        self._parse_criteria_definitions(plan_model_elem, plan_model)
-        return plan_model
+        Raises:
+            CMMNValidationError: If validation fails
+            FileNotFoundError: If file doesn't exist
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-    def _parse_stage_content(self, stage_elem: ET.Element, stage: Stage) -> None:
-        for plan_item_elem in stage_elem.findall("cmmn:planItem", self.namespaces):
-            plan_item = self._parse_plan_item(plan_item_elem)
-            stage.plan_items.append(plan_item)
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            raise CMMNFileError(f"Error reading file {file_path}: {e}")
 
-        for sentry_elem in stage_elem.findall("cmmn:sentry", self.namespaces):
-            sentry = self._parse_sentry(sentry_elem)
-            stage.sentries.append(sentry)
+        return self.validate_xml_string(content)
 
-        for item_elem in stage_elem.findall("cmmn:caseFileItem", self.namespaces):
-            item = self._parse_case_file_item(item_elem)
-            stage.case_file_items.append(item)
+    def validate_json_string(self, json_content: str) -> bool:
+        """Validate JSON CMMN content against the JSON schema.
 
-    def _parse_plan_item(self, plan_item_elem: ET.Element) -> PlanItem:
-        plan_item = PlanItem(
-            id=plan_item_elem.get("id", ""),
-            name=plan_item_elem.get("name"),
-            definition_ref=plan_item_elem.get("definitionRef"),
-        )
+        Args:
+            json_content: The JSON content as a string
 
-        entry_criteria = plan_item_elem.get("entryCriteriaRefs", "")
-        if entry_criteria:
-            plan_item.entry_criteria = entry_criteria.split()
+        Returns:
+            bool: True if valid
 
-        exit_criteria = plan_item_elem.get("exitCriteriaRefs", "")
-        if exit_criteria:
-            plan_item.exit_criteria = exit_criteria.split()
+        Raises:
+            CMMNValidationError: If validation fails
+        """
+        try:
+            data = json.loads(json_content)
+            return self.validator.validate_json(data)
+        except json.JSONDecodeError as e:
+            raise CMMNValidationError(f"Invalid JSON: {e}")
 
-        item_control_elem = plan_item_elem.find("cmmn:itemControl", self.namespaces)
-        if item_control_elem is not None:
-            plan_item.item_control = self._parse_item_control(item_control_elem)
+    def validate_json_file(self, file_path: str) -> bool:
+        """Validate JSON CMMN file against the JSON schema.
 
-        return plan_item
+        Args:
+            file_path: Path to the JSON file
 
-    def _parse_item_control(self, control_elem: ET.Element) -> ItemControl:
-        control = ItemControl()
+        Returns:
+            bool: True if valid
 
-        required_rule = control_elem.find("cmmn:requiredRule", self.namespaces)
-        if required_rule is not None:
-            condition = required_rule.find("cmmn:condition", self.namespaces)
-            if condition is not None:
-                control.required_rule = condition.text
+        Raises:
+            CMMNValidationError: If validation fails
+            FileNotFoundError: If file doesn't exist
+        """
+        if not os.path.exists(file_path):
+            raise FileNotFoundError(f"File not found: {file_path}")
 
-        repetition_rule = control_elem.find("cmmn:repetitionRule", self.namespaces)
-        if repetition_rule is not None:
-            condition = repetition_rule.find("cmmn:condition", self.namespaces)
-            if condition is not None:
-                control.repetition_rule = condition.text
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                content = f.read()
+        except Exception as e:
+            raise CMMNFileError(f"Error reading file {file_path}: {e}")
 
-        manual_activation = control_elem.find(
-            "cmmn:manualActivationRule", self.namespaces
-        )
-        if manual_activation is not None:
-            condition = manual_activation.find("cmmn:condition", self.namespaces)
-            if condition is not None:
-                control.manual_activation_rule = condition.text
+        return self.validate_json_string(content)
 
-        return control
+    def _detect_format(self, content: str, format_type: str) -> str:
+        """Detect the format of the content.
 
-    def _parse_sentry(self, sentry_elem: ET.Element) -> Sentry:
-        sentry = Sentry(id=sentry_elem.get("id", ""), name=sentry_elem.get("name"))
+        Args:
+            content: The content to analyze
+            format_type: Explicit format type or 'auto'
 
-        for on_part_elem in sentry_elem.findall("cmmn:onPart", self.namespaces):
-            on_part = OnPart(
-                id=on_part_elem.get("id", ""), source_ref=on_part_elem.get("sourceRef")
-            )
+        Returns:
+            str: Detected format ('xml' or 'json')
+        """
+        if format_type in ("xml", "json"):
+            return format_type
 
-            standard_event = on_part_elem.find("cmmn:standardEvent", self.namespaces)
-            if standard_event is not None:
-                on_part.standard_event = standard_event.text
+        if format_type != "auto":
+            raise CMMNParsingError(f"Unknown format type: {format_type}")
 
-            sentry.on_parts.append(on_part)
+        content = content.strip()
 
-        if_part_elem = sentry_elem.find("cmmn:ifPart", self.namespaces)
-        if if_part_elem is not None:
-            if_part = IfPart(id=if_part_elem.get("id", ""))
-            condition = if_part_elem.find("cmmn:condition", self.namespaces)
-            if condition is not None:
-                if_part.condition = condition.text
-            sentry.if_part = if_part
+        if content.startswith("<?xml") or content.startswith("<"):
+            return "xml"
+        elif content.startswith("{") or content.startswith("["):
+            return "json"
 
-        return sentry
+        raise CMMNParsingError("Unable to auto-detect format")
 
-    def _parse_task_definitions(self, parent_elem: ET.Element, stage: Stage) -> None:
-        """Parse task definitions within a stage."""
-        # Human Tasks
-        for task_elem in parent_elem.findall("cmmn:humanTask", self.namespaces):
-            task = HumanTask(
-                id=task_elem.get("id", ""),
-                name=task_elem.get("name"),
-                is_blocking=task_elem.get("isBlocking", "true").lower() == "true",
-                performer=task_elem.get("performer"),
-            )
-            stage._task_definitions.append(task)
+    def _detect_format_from_path(self, file_path: str) -> str:
+        """Detect format from file extension.
 
-        # Process Tasks
-        for task_elem in parent_elem.findall("cmmn:processTask", self.namespaces):
-            process_task = ProcessTask(
-                id=task_elem.get("id", ""),
-                name=task_elem.get("name"),
-                is_blocking=task_elem.get("isBlocking", "true").lower() == "true",
-                process_ref=task_elem.get("processRef"),
-            )
-            stage._task_definitions.append(process_task)
+        Args:
+            file_path: Path to the file
 
-        # Case Tasks
-        for task_elem in parent_elem.findall("cmmn:caseTask", self.namespaces):
-            case_task = CaseTask(
-                id=task_elem.get("id", ""),
-                name=task_elem.get("name"),
-                is_blocking=task_elem.get("isBlocking", "true").lower() == "true",
-                case_ref=task_elem.get("caseRef"),
-            )
-            stage._task_definitions.append(case_task)
+        Returns:
+            str: Detected format ('xml' or 'json')
+        """
+        path = Path(file_path)
+        extension = path.suffix.lower()
 
-        # Nested stages
-        for stage_elem in parent_elem.findall("cmmn:stage", self.namespaces):
-            nested_stage = Stage(
-                id=stage_elem.get("id", ""),
-                name=stage_elem.get("name"),
-                auto_complete=stage_elem.get("autoComplete", "false").lower() == "true",
-            )
-            self._parse_stage_content(stage_elem, nested_stage)
-            self._parse_task_definitions(stage_elem, nested_stage)
-            stage._stage_definitions.append(nested_stage)
+        if extension in (".xml", ".cmmn"):
+            return "xml"
+        elif extension == ".json":
+            return "json"
 
-    def _parse_event_definitions(self, parent_elem: ET.Element, stage: Stage) -> None:
-        """Parse event listener definitions within a stage."""
-        # Timer Event Listeners
-        for event_elem in parent_elem.findall(
-            "cmmn:timerEventListener", self.namespaces
-        ):
-            timer_expr_elem = event_elem.find("cmmn:timerExpression", self.namespaces)
-            timer_expr = timer_expr_elem.text if timer_expr_elem is not None else None
-
-            event = TimerEventListener(
-                id=event_elem.get("id", ""),
-                name=event_elem.get("name"),
-                timer_expression=timer_expr,
-            )
-            stage._event_definitions.append(event)
-
-        # User Event Listeners
-        for event_elem in parent_elem.findall(
-            "cmmn:userEventListener", self.namespaces
-        ):
-            auth_roles = event_elem.get("authorizedRoleRefs", "")
-            auth_roles_list = auth_roles.split() if auth_roles else []
-
-            user_event = UserEventListener(
-                id=event_elem.get("id", ""),
-                name=event_elem.get("name"),
-                authorized_role_refs=auth_roles_list,
-            )
-            stage._event_definitions.append(user_event)
-
-    def _parse_milestone_definitions(
-        self, parent_elem: ET.Element, stage: Stage
-    ) -> None:
-        """Parse milestone definitions within a stage."""
-        for milestone_elem in parent_elem.findall("cmmn:milestone", self.namespaces):
-            milestone = Milestone(
-                id=milestone_elem.get("id", ""), name=milestone_elem.get("name")
-            )
-            stage._milestone_definitions.append(milestone)
-
-    def _parse_criteria_definitions(
-        self, parent_elem: ET.Element, stage: Stage
-    ) -> None:
-        """Parse criteria definitions within a stage."""
-        for criterion_elem in parent_elem.findall(
-            "cmmn:entryCriterion", self.namespaces
-        ):
-            criterion = EntryCriterion(
-                id=criterion_elem.get("id", ""),
-                name=criterion_elem.get("name"),
-                sentry_ref=criterion_elem.get("sentryRef"),
-            )
-            stage._criteria_definitions.append(criterion)
-
-        for criterion_elem in parent_elem.findall(
-            "cmmn:exitCriterion", self.namespaces
-        ):
-            exit_criterion = ExitCriterion(
-                id=criterion_elem.get("id", ""),
-                name=criterion_elem.get("name"),
-                sentry_ref=criterion_elem.get("sentryRef"),
-            )
-            stage._criteria_definitions.append(exit_criterion)
+        return "auto"

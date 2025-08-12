@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="ComplexExample"
+             name="Complex CMMN Example"
+             targetNamespace="http://example.org/cmmn/complex"
+             expressionLanguage="javascript"
+             exporter="CMMN Parser Example"
+             exporterVersion="1.0"
+             author="CMMN Parser"
+             creationDate="2025-01-01">
+
+    <!-- Imports -->
+    <import id="import1" namespace="http://example.org/shared" location="shared.cmmn" importType="cmmn"/>
+    
+    <!-- Case File Item Definitions -->
+    <caseFileItemDefinition id="patientRecordDef" name="Patient Record" structureRef="PatientType">
+        <definitiveProperty id="patientId"/>
+        <definitiveProperty id="patientName"/>
+    </caseFileItemDefinition>
+    
+    <caseFileItemDefinition id="medicalHistoryDef" name="Medical History" structureRef="HistoryType">
+        <definitiveProperty id="historyId"/>
+        <definitiveProperty id="lastUpdated"/>
+    </caseFileItemDefinition>
+
+    <!-- Process Definitions -->
+    <process id="diagnosticProcess" name="Diagnostic Process" isExecutable="true">
+        <documentation>External diagnostic workflow process</documentation>
+    </process>
+    
+    <process id="billingProcess" name="Billing Process" isExecutable="true">
+        <documentation>Patient billing and insurance processing</documentation>
+    </process>
+
+    <!-- Decision Definitions -->
+    <decision id="treatmentDecision" name="Treatment Decision">
+        <description>Determines appropriate treatment based on diagnosis</description>
+        <decisionLogic>
+            if (diagnosis.severity == "HIGH") {
+                return "IMMEDIATE_TREATMENT";
+            } else if (diagnosis.severity == "MEDIUM") {
+                return "SCHEDULED_TREATMENT"; 
+            } else {
+                return "MONITORING_ONLY";
+            }
+        </decisionLogic>
+    </decision>
+
+    <case id="case1" name="Patient Care Management">
+        <!-- Case File Model -->
+        <caseFileModel id="cfm1" name="Patient Care File">
+            <caseFileItem id="patientRecord" definitionRef="patientRecordDef"/>
+            <caseFileItem id="medicalHistory" definitionRef="medicalHistoryDef"/>
+        </caseFileModel>
+        
+        <casePlanModel id="cpm1" name="Patient Care Plan" autoComplete="false">
+            
+            <!-- Plan Items for Stages -->
+            <planItem id="pi_admission" name="Patient Admission" definitionRef="admissionStage"/>
+            <planItem id="pi_diagnosis" name="Diagnosis Phase" definitionRef="diagnosisStage" entryCriteriaRefs="sentry_admission_complete"/>
+            <planItem id="pi_treatment" name="Treatment Phase" definitionRef="treatmentStage" entryCriteriaRefs="sentry_diagnosis_complete"/>
+            
+            <!-- Plan Items for Tasks -->
+            <planItem id="pi_billing" name="Process Billing" definitionRef="billingTask" entryCriteriaRefs="sentry_treatment_complete"/>
+            <planItem id="pi_discharge" name="Patient Discharge" definitionRef="dischargeTask" entryCriteriaRefs="sentry_billing_complete"/>
+            
+            <!-- Plan Items for Milestones -->
+            <planItem id="pi_milestone1" name="Care Complete" definitionRef="milestone_care_complete"/>
+            
+            <!-- Admission Stage -->
+            <stage id="admissionStage" name="Patient Admission" autoComplete="false">
+                <planItem id="pi1" name="Register Patient" definitionRef="task1"/>
+                <planItem id="pi2" name="Collect History" definitionRef="task2"/>
+                <planItem id="pi3" name="Initial Assessment" definitionRef="task3"/>
+                
+                <humanTask id="task1" name="Register Patient" isBlocking="true" performer="receptionist"/>
+                <humanTask id="task2" name="Collect History" isBlocking="true" performer="nurse"/>
+                <humanTask id="task3" name="Initial Assessment" isBlocking="true" performer="doctor"/>
+            </stage>
+            
+            <!-- Diagnosis Stage -->
+            <stage id="diagnosisStage" name="Diagnosis Phase" autoComplete="false">
+                <planItem id="pi4" name="Run Diagnostics" definitionRef="task4"/>
+                <planItem id="pi5" name="Review Results" definitionRef="task5"/>
+                <planItem id="pi6" name="Determine Treatment" definitionRef="task6"/>
+                
+                <processTask id="task4" name="Run Diagnostics" processRef="diagnosticProcess" isBlocking="true"/>
+                <humanTask id="task5" name="Review Results" isBlocking="true" performer="doctor"/>
+                <decisionTask id="task6" name="Determine Treatment" decisionRef="treatmentDecision" isBlocking="true"/>
+            </stage>
+            
+            <!-- Treatment Stage -->
+            <stage id="treatmentStage" name="Treatment Phase" autoComplete="false">
+                <planItem id="pi7" name="Administer Treatment" definitionRef="task7"/>
+                <planItem id="pi8" name="Monitor Progress" definitionRef="task8"/>
+                <planItem id="pi9" name="Emergency Response" definitionRef="task9" entryCriteriaRefs="sentry_emergency"/>
+                
+                <humanTask id="task7" name="Administer Treatment" isBlocking="true" performer="medical_staff"/>
+                <humanTask id="task8" name="Monitor Progress" isBlocking="false" performer="nurse"/>
+                <humanTask id="task9" name="Emergency Response" isBlocking="true" performer="emergency_team"/>
+            </stage>
+            
+            <!-- Final Tasks -->
+            <processTask id="billingTask" name="Process Billing" processRef="billingProcess" isBlocking="false"/>
+            <humanTask id="dischargeTask" name="Patient Discharge" isBlocking="true" performer="discharge_coordinator"/>
+            
+            <!-- Milestones -->
+            <milestone id="milestone_care_complete" name="Patient Care Complete">
+                <documentation>All patient care activities have been completed successfully</documentation>
+            </milestone>
+            
+            <!-- Sentries (Entry/Exit Criteria) -->
+            <sentry id="sentry_admission_complete" name="Admission Complete">
+                <planItemOnPart id="onPart1" sourceRef="pi_admission">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+            
+            <sentry id="sentry_diagnosis_complete" name="Diagnosis Complete">
+                <planItemOnPart id="onPart2" sourceRef="pi_diagnosis">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+            
+            <sentry id="sentry_treatment_complete" name="Treatment Complete">
+                <planItemOnPart id="onPart3" sourceRef="pi_treatment">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+            
+            <sentry id="sentry_billing_complete" name="Billing Complete">
+                <planItemOnPart id="onPart4" sourceRef="pi_billing">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+            </sentry>
+            
+            <sentry id="sentry_emergency" name="Emergency Situation">
+                <ifPart>
+                    <condition>patientStatus == 'CRITICAL' || vitals.heartRate > 120</condition>
+                </ifPart>
+            </sentry>
+            
+        </casePlanModel>
+    </case>
+
+    <!-- Extension Elements -->
+    <extensionElements>
+        <customProperty name="department" value="cardiology"/>
+        <customProperty name="version" value="2.1"/>
+        <configuration>
+            <setting key="autoAssign" value="true"/>
+            <setting key="escalationTimeout" value="4h"/>
+        </configuration>
+    </extensionElements>
+
+</definitions>

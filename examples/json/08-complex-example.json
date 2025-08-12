@@ -1,0 +1,312 @@
+{
+    "id": "ComplexExample",
+    "name": "Complex CMMN Example",
+    "targetNamespace": "http://example.org/cmmn/complex",
+    "expressionLanguage": "javascript",
+    "exporter": "CMMN Parser Example",
+    "exporterVersion": "1.0",
+    "author": "CMMN Parser",
+    "creationDate": "2025-01-01",
+    "imports": [
+        {
+            "id": "import1",
+            "namespace": "http://example.org/shared",
+            "location": "shared.cmmn",
+            "importType": "cmmn"
+        }
+    ],
+    "caseFileItemDefinitions": [
+        {
+            "id": "patientRecordDef",
+            "name": "Patient Record",
+            "structureRef": "PatientType",
+            "definitiveProperty": ["patientId", "patientName"]
+        },
+        {
+            "id": "medicalHistoryDef",
+            "name": "Medical History",
+            "structureRef": "HistoryType",
+            "definitiveProperty": ["historyId", "lastUpdated"]
+        }
+    ],
+    "processes": [
+        {
+            "id": "diagnosticProcess",
+            "name": "Diagnostic Process",
+            "description": "External diagnostic workflow process",
+            "isExecutable": true
+        },
+        {
+            "id": "billingProcess",
+            "name": "Billing Process",
+            "description": "Patient billing and insurance processing",
+            "isExecutable": true
+        }
+    ],
+    "decisions": [
+        {
+            "id": "treatmentDecision",
+            "name": "Treatment Decision",
+            "description": "Determines appropriate treatment based on diagnosis",
+            "decisionLogic": "if (diagnosis.severity == \"HIGH\") {\n    return \"IMMEDIATE_TREATMENT\";\n} else if (diagnosis.severity == \"MEDIUM\") {\n    return \"SCHEDULED_TREATMENT\"; \n} else {\n    return \"MONITORING_ONLY\";\n}"
+        }
+    ],
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Patient Care Management",
+            "caseFileModel": {
+                "id": "cfm1",
+                "name": "Patient Care File",
+                "caseFileItems": ["patientRecord", "medicalHistory"]
+            },
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Patient Care Plan",
+                "autoComplete": false,
+                "planItems": [
+                    {
+                        "id": "pi_admission",
+                        "name": "Patient Admission",
+                        "definitionRef": "admissionStage"
+                    },
+                    {
+                        "id": "pi_diagnosis",
+                        "name": "Diagnosis Phase",
+                        "definitionRef": "diagnosisStage",
+                        "entryCriteria": ["sentry_admission_complete"]
+                    },
+                    {
+                        "id": "pi_treatment",
+                        "name": "Treatment Phase",
+                        "definitionRef": "treatmentStage",
+                        "entryCriteria": ["sentry_diagnosis_complete"]
+                    },
+                    {
+                        "id": "pi_billing",
+                        "name": "Process Billing",
+                        "definitionRef": "billingTask",
+                        "entryCriteria": ["sentry_treatment_complete"]
+                    },
+                    {
+                        "id": "pi_discharge",
+                        "name": "Patient Discharge",
+                        "definitionRef": "dischargeTask",
+                        "entryCriteria": ["sentry_billing_complete"]
+                    },
+                    {
+                        "id": "pi_milestone1",
+                        "name": "Care Complete",
+                        "definitionRef": "milestone_care_complete"
+                    }
+                ],
+                "stages": [
+                    {
+                        "id": "admissionStage",
+                        "name": "Patient Admission",
+                        "autoComplete": false,
+                        "planItems": [
+                            {
+                                "id": "pi1",
+                                "name": "Register Patient",
+                                "definitionRef": "task1"
+                            },
+                            {
+                                "id": "pi2",
+                                "name": "Collect History",
+                                "definitionRef": "task2"
+                            },
+                            {
+                                "id": "pi3",
+                                "name": "Initial Assessment",
+                                "definitionRef": "task3"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "diagnosisStage",
+                        "name": "Diagnosis Phase",
+                        "autoComplete": false,
+                        "planItems": [
+                            {
+                                "id": "pi4",
+                                "name": "Run Diagnostics",
+                                "definitionRef": "task4"
+                            },
+                            {
+                                "id": "pi5",
+                                "name": "Review Results",
+                                "definitionRef": "task5"
+                            },
+                            {
+                                "id": "pi6",
+                                "name": "Determine Treatment",
+                                "definitionRef": "task6"
+                            }
+                        ]
+                    },
+                    {
+                        "id": "treatmentStage",
+                        "name": "Treatment Phase",
+                        "autoComplete": false,
+                        "planItems": [
+                            {
+                                "id": "pi7",
+                                "name": "Administer Treatment",
+                                "definitionRef": "task7"
+                            },
+                            {
+                                "id": "pi8",
+                                "name": "Monitor Progress",
+                                "definitionRef": "task8"
+                            },
+                            {
+                                "id": "pi9",
+                                "name": "Emergency Response",
+                                "definitionRef": "task9",
+                                "entryCriteria": ["sentry_emergency"]
+                            }
+                        ]
+                    }
+                ],
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Register Patient",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "receptionist"
+                    },
+                    {
+                        "id": "task2",
+                        "name": "Collect History",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "nurse"
+                    },
+                    {
+                        "id": "task3",
+                        "name": "Initial Assessment",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "doctor"
+                    },
+                    {
+                        "id": "task4",
+                        "name": "Run Diagnostics",
+                        "type": "processTask",
+                        "isBlocking": true,
+                        "processRef": "diagnosticProcess"
+                    },
+                    {
+                        "id": "task5",
+                        "name": "Review Results",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "doctor"
+                    },
+                    {
+                        "id": "task6",
+                        "name": "Determine Treatment",
+                        "type": "decisionTask",
+                        "isBlocking": true,
+                        "decisionRef": "treatmentDecision"
+                    },
+                    {
+                        "id": "task7",
+                        "name": "Administer Treatment",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "medical_staff"
+                    },
+                    {
+                        "id": "task8",
+                        "name": "Monitor Progress",
+                        "type": "humanTask",
+                        "isBlocking": false,
+                        "performer": "nurse"
+                    },
+                    {
+                        "id": "task9",
+                        "name": "Emergency Response",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "emergency_team"
+                    },
+                    {
+                        "id": "billingTask",
+                        "name": "Process Billing",
+                        "type": "processTask",
+                        "isBlocking": false,
+                        "processRef": "billingProcess"
+                    },
+                    {
+                        "id": "dischargeTask",
+                        "name": "Patient Discharge",
+                        "type": "humanTask",
+                        "isBlocking": true,
+                        "performer": "discharge_coordinator"
+                    }
+                ],
+                "milestones": [
+                    {
+                        "id": "milestone_care_complete",
+                        "name": "Patient Care Complete",
+                        "description": "All patient care activities have been completed successfully"
+                    }
+                ],
+                "sentries": [
+                    {
+                        "id": "sentry_admission_complete",
+                        "name": "Admission Complete",
+                        "onPart": ["pi_admission:complete"]
+                    },
+                    {
+                        "id": "sentry_diagnosis_complete",
+                        "name": "Diagnosis Complete",
+                        "onPart": ["pi_diagnosis:complete"]
+                    },
+                    {
+                        "id": "sentry_treatment_complete",
+                        "name": "Treatment Complete",
+                        "onPart": ["pi_treatment:complete"]
+                    },
+                    {
+                        "id": "sentry_billing_complete",
+                        "name": "Billing Complete",
+                        "onPart": ["pi_billing:complete"]
+                    },
+                    {
+                        "id": "sentry_emergency",
+                        "name": "Emergency Situation",
+                        "ifPart": "patientStatus == 'CRITICAL' || vitals.heartRate > 120"
+                    }
+                ]
+            }
+        }
+    ],
+    "extensionElements": {
+        "customProperty": [
+            {
+                "name": "department",
+                "value": "cardiology"
+            },
+            {
+                "name": "version",
+                "value": "2.1"
+            }
+        ],
+        "configuration": {
+            "setting": [
+                {
+                    "key": "autoAssign",
+                    "value": "true"
+                },
+                {
+                    "key": "escalationTimeout",
+                    "value": "4h"
+                }
+            ]
+        }
+    }
+}

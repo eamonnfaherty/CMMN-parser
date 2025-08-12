@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="ProcessTasksExample"
+             name="Process Tasks Example"
+             targetNamespace="http://example.org/cmmn/processtasks">
+
+    <process id="creditCheckProcess" name="Credit Check Process" isExecutable="true">
+        <documentation>External credit verification process</documentation>
+    </process>
+
+    <process id="notificationProcess" name="Notification Process" isExecutable="true">
+        <documentation>Customer notification process</documentation>
+    </process>
+
+    <case id="case1" name="Loan Application">
+        <casePlanModel id="cpm1" name="Loan Processing Plan" autoComplete="false">
+            <processTask id="task1" name="Credit Check" processRef="creditCheckProcess" isBlocking="true"/>
+            <processTask id="task2" name="Send Notification" processRef="notificationProcess" isBlocking="false"/>
+        </casePlanModel>
+    </case>
+
+</definitions>

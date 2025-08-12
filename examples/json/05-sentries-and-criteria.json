@@ -1,0 +1,103 @@
+{
+    "id": "SentriesCriteriaExample",
+    "name": "Sentries and Criteria Example",
+    "targetNamespace": "http://example.org/cmmn/sentries",
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Order Processing with Conditions",
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Order Processing Plan",
+                "autoComplete": false,
+                "planItems": [
+                    {
+                        "id": "pi1",
+                        "name": "Validate Order",
+                        "definitionRef": "task1"
+                    },
+                    {
+                        "id": "pi2",
+                        "name": "Check Inventory",
+                        "definitionRef": "task2",
+                        "entryCriteria": ["sentry1"]
+                    },
+                    {
+                        "id": "pi3",
+                        "name": "Process Payment",
+                        "definitionRef": "task3",
+                        "entryCriteria": ["sentry2"]
+                    },
+                    {
+                        "id": "pi4",
+                        "name": "Ship Order",
+                        "definitionRef": "task4",
+                        "entryCriteria": ["sentry3"]
+                    },
+                    {
+                        "id": "pi5",
+                        "name": "Cancel Order",
+                        "definitionRef": "task5",
+                        "entryCriteria": ["sentry4"]
+                    }
+                ],
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Validate Order",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task2",
+                        "name": "Check Inventory",
+                        "type": "task",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task3",
+                        "name": "Process Payment",
+                        "type": "processTask",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task4",
+                        "name": "Ship Order",
+                        "type": "task",
+                        "isBlocking": true
+                    },
+                    {
+                        "id": "task5",
+                        "name": "Cancel Order",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    }
+                ],
+                "sentries": [
+                    {
+                        "id": "sentry1",
+                        "name": "Order Validated",
+                        "onPart": ["pi1:complete"]
+                    },
+                    {
+                        "id": "sentry2",
+                        "name": "Inventory Available",
+                        "onPart": ["pi2:complete"],
+                        "ifPart": "inventory > 0"
+                    },
+                    {
+                        "id": "sentry3",
+                        "name": "Payment Processed",
+                        "onPart": ["pi3:complete"]
+                    },
+                    {
+                        "id": "sentry4",
+                        "name": "Order Invalid or No Inventory",
+                        "onPart": ["pi1:complete"],
+                        "ifPart": "orderStatus == 'invalid' || inventory == 0"
+                    }
+                ]
+            }
+        }
+    ]
+}

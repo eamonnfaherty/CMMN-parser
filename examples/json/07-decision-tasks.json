@@ -1,0 +1,75 @@
+{
+    "id": "DecisionTasksExample",
+    "name": "Decision Tasks Example",
+    "targetNamespace": "http://example.org/cmmn/decisions",
+    "decisions": [
+        {
+            "id": "creditDecision",
+            "name": "Credit Score Decision",
+            "decisionLogic": "if (creditScore >= 700) {\n    return \"APPROVED\";\n} else if (creditScore >= 600) {\n    return \"MANUAL_REVIEW\";\n} else {\n    return \"REJECTED\";\n}"
+        },
+        {
+            "id": "loanAmountDecision",
+            "name": "Loan Amount Decision",
+            "decisionLogic": "switch (applicantType) {\n    case \"PREMIUM\": return requestedAmount;\n    case \"STANDARD\": return Math.min(requestedAmount, 50000);\n    case \"BASIC\": return Math.min(requestedAmount, 10000);\n    default: return 0;\n}"
+        }
+    ],
+    "cases": [
+        {
+            "id": "case1",
+            "name": "Loan Application Processing",
+            "casePlanModel": {
+                "id": "cpm1",
+                "name": "Loan Processing Plan",
+                "autoComplete": false,
+                "planItems": [
+                    {
+                        "id": "pi1",
+                        "name": "Evaluate Credit",
+                        "definitionRef": "task1"
+                    },
+                    {
+                        "id": "pi2",
+                        "name": "Determine Loan Amount",
+                        "definitionRef": "task2"
+                    },
+                    {
+                        "id": "pi3",
+                        "name": "Manual Review",
+                        "definitionRef": "task3"
+                    }
+                ],
+                "tasks": [
+                    {
+                        "id": "task1",
+                        "name": "Evaluate Credit",
+                        "type": "decisionTask",
+                        "isBlocking": true,
+                        "decisionRef": "creditDecision"
+                    },
+                    {
+                        "id": "task2",
+                        "name": "Determine Loan Amount",
+                        "type": "decisionTask",
+                        "isBlocking": true,
+                        "decisionRef": "loanAmountDecision"
+                    },
+                    {
+                        "id": "task3",
+                        "name": "Manual Review",
+                        "type": "humanTask",
+                        "isBlocking": true
+                    }
+                ],
+                "sentries": [
+                    {
+                        "id": "sentry1",
+                        "name": "Manual Review Required",
+                        "onPart": ["pi1:complete"],
+                        "ifPart": "creditDecisionResult == \"MANUAL_REVIEW\""
+                    }
+                ]
+            }
+        }
+    ]
+}

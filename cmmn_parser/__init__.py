@@ -1,76 +1,48 @@
-from pathlib import Path
-from typing import Union
+"""CMMN Parser Library
 
-from .models import (
-    Association,
-    Case,
-    CaseFileItem,
-    CaseFileModel,
-    CasePlanModel,
-    CaseTask,
-    CMMNDefinition,
-    CMMNElementType,
-    EntryCriterion,
-    EventListener,
-    ExitCriterion,
-    HumanTask,
-    IfPart,
-    ItemControl,
-    Milestone,
-    OnPart,
-    PlanItem,
-    PlanItemLifecycleState,
-    ProcessTask,
-    ReactivationCriterion,
-    Role,
-    Sentry,
-    Stage,
-    Task,
-    TimerEventListener,
-    UserEventListener,
-)
-from .parser import CMMNParseError, CMMNParser
+A parsing library for CMMN (Case Management Model and Notation) with XML and JSON support.
+"""
+
+from .exceptions import CMMNParsingError, CMMNValidationError
+from .models import CMMNDefinitions
+from .parser import CMMNParser
 
 __version__ = "0.1.0"
-__all__ = [
-    "CMMNParser",
-    "CMMNParseError",
-    "CMMNDefinition",
-    "Case",
-    "CasePlanModel",
-    "CaseFileModel",
-    "CaseFileItem",
-    "Stage",
-    "Task",
-    "HumanTask",
-    "ProcessTask",
-    "CaseTask",
-    "Milestone",
-    "EventListener",
-    "TimerEventListener",
-    "UserEventListener",
-    "Sentry",
-    "OnPart",
-    "IfPart",
-    "EntryCriterion",
-    "ExitCriterion",
-    "ReactivationCriterion",
-    "PlanItem",
-    "ItemControl",
-    "Association",
-    "Role",
-    "CMMNElementType",
-    "PlanItemLifecycleState",
-]
+__all__ = ["CMMNParser", "CMMNDefinitions", "CMMNParsingError", "CMMNValidationError"]
 
 
-def parse_cmmn_file(file_path: Union[str, Path]) -> CMMNDefinition:
-    """Convenience function to parse a CMMN file."""
+def parse_cmmn_string(content: str, format_type: str = "auto") -> CMMNDefinitions:
+    """Convenience function to parse CMMN content from a string.
+
+    Args:
+        content: The CMMN content as a string
+        format_type: The format type ('xml', 'json', or 'auto')
+
+    Returns:
+        CMMNDefinitions: Parsed CMMN definitions
+
+    Raises:
+        CMMNParsingError: If parsing fails
+        CMMNValidationError: If validation fails
+    """
     parser = CMMNParser()
-    return parser.parse_file(file_path)
+    return parser.parse_string(content, format_type)
 
 
-def parse_cmmn_string(cmmn_text: str) -> CMMNDefinition:
-    """Convenience function to parse CMMN text."""
+def parse_cmmn_file(file_path: str, format_type: str = "auto") -> CMMNDefinitions:
+    """Convenience function to parse CMMN content from a file.
+
+    Args:
+        file_path: Path to the CMMN file
+        format_type: The format type ('xml', 'json', or 'auto')
+
+    Returns:
+        CMMNDefinitions: Parsed CMMN definitions
+
+    Raises:
+        CMMNParsingError: If parsing fails
+        CMMNValidationError: If validation fails
+        FileNotFoundError: If file doesn't exist
+    """
     parser = CMMNParser()
-    return parser.parse_string(cmmn_text)
+    return parser.parse_file(file_path, format_type)

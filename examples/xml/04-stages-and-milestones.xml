@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="StagesMilestonesExample"
+             name="Stages and Milestones Example"
+             targetNamespace="http://example.org/cmmn/stages">
+
+    <case id="case1" name="Insurance Claim Processing">
+        <casePlanModel id="cpm1" name="Claim Processing Plan" autoComplete="false">
+            
+            <!-- Initial Assessment Stage -->
+            <stage id="stage1" name="Initial Assessment" autoComplete="false">
+                <planItem id="pi1" name="Collect Documents" definitionRef="task1"/>
+                <planItem id="pi2" name="Verify Information" definitionRef="task2"/>
+                <humanTask id="task1" name="Collect Documents" isBlocking="true"/>
+                <humanTask id="task2" name="Verify Information" isBlocking="true"/>
+            </stage>
+            
+            <!-- Investigation Stage -->
+            <stage id="stage2" name="Investigation" autoComplete="false">
+                <planItem id="pi3" name="Field Investigation" definitionRef="task3"/>
+                <planItem id="pi4" name="Expert Review" definitionRef="task4"/>
+                <humanTask id="task3" name="Field Investigation" isBlocking="true"/>
+                <humanTask id="task4" name="Expert Review" isBlocking="false"/>
+            </stage>
+            
+            <!-- Milestones -->
+            <milestone id="milestone1" name="Assessment Complete">
+                <documentation>All initial assessment tasks completed</documentation>
+            </milestone>
+            
+            <milestone id="milestone2" name="Investigation Complete">
+                <documentation>Investigation phase finished</documentation>
+            </milestone>
+            
+        </casePlanModel>
+    </case>
+
+</definitions>

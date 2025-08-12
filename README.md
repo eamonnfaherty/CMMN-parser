@@ -6,7 +6,7 @@
 [![Python versions](https://img.shields.io/pypi/pyversions/CMMN-parser.svg)](https://pypi.org/project/CMMN-parser/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A comprehensive Python library for parsing CMMN (Case Management Model and Notation) files. This library provides a complete, typed interface for working with CMMN documents, supporting all major CMMN constructs including stages, tasks, events, milestones, sentries, and case file items.
+A comprehensive Python library for parsing CMMN (Case Management Model and Notation) files in both XML and JSON formats. This library provides a complete, typed interface for working with CMMN documents, supporting all major CMMN constructs including stages, tasks, events, milestones, sentries, and case file items.
 
 ## Features
 
@@ -20,8 +20,15 @@ A comprehensive Python library for parsing CMMN (Case Management Model and Notat
   - Entry/Exit/Reactivation Criteria
   - Plan Items with Item Controls
 
+- **Multiple Format Support**: 
+  - **XML Format**: Traditional CMMN XML files
+  - **JSON Format**: Modern JSON representation with full schema validation
+  - **Auto-Detection**: Automatically detects file format based on content
+
+- **JSON Schema Validation**: Built-in JSONSchema validation for CMMN JSON files
 - **Type Safety**: Fully typed with comprehensive dataclasses for all CMMN elements
-- **Flexible Input**: Parse from files or strings
+- **Flexible Input**: Parse from files or strings in either format
+- **Validation Functions**: Standalone validation functions for JSON format
 - **Error Handling**: Comprehensive error handling with detailed error messages
 - **High Test Coverage**: 98% test coverage with exhaustive unit tests
 - **Python 3.8+ Support**: Compatible with Python 3.8 through 3.13
@@ -39,13 +46,13 @@ uv add CMMN-parser
 
 ## Quick Start
 
-### Parse from File
+### Parse from File (Auto-Detection)
 
 ```python
 import cmmn_parser
 
-# Parse a CMMN file
-definition = cmmn_parser.parse_cmmn_file("path/to/your/case.cmmn")
+# Parse a CMMN file (XML or JSON - auto-detected)
+definition = cmmn_parser.parse_cmmn_file("path/to/your/case.cmmn")  # or .json
 
 # Access cases
 for case in definition.cases:
@@ -90,6 +97,110 @@ definition = parser.parse_file("case.cmmn")
 
 # Parse string
 definition = parser.parse_string(cmmn_xml_string)
+```
+
+## JSON Format Support
+
+### Parse from JSON String
+
+```python
+import cmmn_parser
+
+cmmn_json = {
+    "definitions": {
+        "targetNamespace": "http://example.com/cmmn",
+        "cases": [
+            {
+                "id": "SimpleCase",
+                "name": "Simple Case",
+                "casePlanModel": {
+                    "id": "CasePlan",
+                    "name": "Case Plan",
+                    "planItems": [
+                        {
+                            "id": "Task1",
+                            "name": "Review",
+                            "definitionRef": "HumanTask1"
+                        }
+                    ],
+                    "taskDefinitions": [
+                        {
+                            "id": "HumanTask1",
+                            "name": "Review Document",
+                            "performer": "reviewer"
+                        }
+                    ]
+                }
+            }
+        ]
+    }
+}
+
+# Parse from dictionary
+definition = cmmn_parser.parse_cmmn_json(cmmn_json)
+
+# Or parse from JSON string
+import json
+definition = cmmn_parser.parse_cmmn_json(json.dumps(cmmn_json))
+
+case = definition.cases[0]
+print(f"Parsed case: {case.name}")
+```
+
+### Parse from JSON File
+
+```python
+import cmmn_parser
+
+# Parse JSON file directly
+definition = cmmn_parser.parse_cmmn_json_file("case.json")
+
+# Or use the generic function (auto-detects format)
+definition = cmmn_parser.parse_cmmn_file("case.json")
+```
+
+### JSON Validation
+
+```python
+import cmmn_parser
+
+# Validate JSON data
+cmmn_json = {
+    "definitions": {
+        "cases": [
+            {
+                "id": "TestCase",
+                "name": "Test Case"
+            }
+        ]
+    }
+}
+
+# Validate and get boolean result
+try:
+    is_valid = cmmn_parser.validate_cmmn_json(cmmn_json)
+    print("JSON is valid!")
+except cmmn_parser.CMMNParseError as e:
+    print(f"Validation failed: {e}")
+
+# Get validation errors without exception
+errors = cmmn_parser.get_validation_errors(cmmn_json)
+if errors:
+    print("Validation errors:", errors)
+else:
+    print("No validation errors")
+
+# Validate JSON file
+try:
+    is_valid = cmmn_parser.validate_cmmn_json_file("case.json")
+    print("File is valid!")
+except cmmn_parser.CMMNParseError as e:
+    print(f"File validation failed: {e}")
+
+# Get schema information
+schema_info = cmmn_parser.get_schema_info()
+print(f"Schema: {schema_info['title']}")
+print(f"Supported elements: {len(schema_info['supported_elements'])}")
 ```
 
 ## Advanced Usage
@@ -187,34 +298,46 @@ except CMMNParseError as e:
 git clone https://github.com/eamonnfaherty/CMMN-parser.git
 cd CMMN-parser
 
-# Install dependencies
-uv sync --extra dev
+# Install development dependencies
+make install-dev
 
-# Run tests
-uv run pytest
+# See all available commands
+make help
+```
 
-# Run tests with coverage
-uv run pytest --cov=src/cmmn_parser --cov-report=html
+### Available Make Commands
 
-# Format code
-uv run black src/ tests/
-uv run isort src/ tests/
+```bash
+# Development workflow
+make install-dev     # Install development dependencies  
+make test           # Run tests
+make test-cov       # Run tests with coverage report
+make lint           # Run linting (flake8)
+make format         # Format code (black + isort)
+make type-check     # Run type checking (mypy)
 
-# Type checking
-uv run mypy src/cmmn_parser
+# CI commands (same as GitHub Actions)
+make ci             # Run full CI suite
+make pr-check       # Quick PR validation checks
+make security       # Run security checks
+
+# Build and release
+make build          # Build package
+make clean          # Clean build artifacts
+make pre-release    # Full pre-release validation
 ```
 
 ### Running Tests
 
 ```bash
 # Run all tests
-uv run pytest tests/ -v
+make test
 
-# Run specific test file
+# Run tests with coverage
+make test-cov
+
+# Run specific test file (using uv directly)
 uv run pytest tests/test_parser.py -v
-
-# Run with coverage
-uv run pytest --cov=src/cmmn_parser --cov-report=term-missing
 ```
 
 ## Contributing
@@ -222,15 +345,18 @@ uv run pytest --cov=src/cmmn_parser --cov-report=term-missing
 1. Fork the repository
 2. Create a feature branch: `git checkout -b feature-name`
 3. Make your changes and add tests
-4. Run the test suite: `uv run pytest`
+4. Run the test suite: `make ci`
 5. Submit a pull request
 
 Please ensure:
-- All tests pass
-- Code coverage remains high (>95%)
-- Code is formatted with Black and isort
-- Type hints are included
+- All tests pass: `make test`
+- Code coverage remains high (>95%): `make test-cov`
+- Code is formatted: `make format`
+- Type checking passes: `make type-check`
+- Linting passes: `make lint`
 - Documentation is updated as needed
+
+**Quick validation before submitting:** `make pr-check`
 
 ## License
 

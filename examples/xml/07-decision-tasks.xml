@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/CMMN/20151109/MODEL"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             id="DecisionTasksExample"
+             name="Decision Tasks Example"
+             targetNamespace="http://example.org/cmmn/decisions">
+
+    <!-- Decision Definitions -->
+    <decision id="creditDecision" name="Credit Score Decision">
+        <decisionLogic>
+            if (creditScore >= 700) {
+                return "APPROVED";
+            } else if (creditScore >= 600) {
+                return "MANUAL_REVIEW";
+            } else {
+                return "REJECTED";
+            }
+        </decisionLogic>
+    </decision>
+    
+    <decision id="loanAmountDecision" name="Loan Amount Decision">
+        <decisionLogic>
+            switch (applicantType) {
+                case "PREMIUM": return requestedAmount;
+                case "STANDARD": return Math.min(requestedAmount, 50000);
+                case "BASIC": return Math.min(requestedAmount, 10000);
+                default: return 0;
+            }
+        </decisionLogic>
+    </decision>
+
+    <case id="case1" name="Loan Application Processing">
+        <casePlanModel id="cpm1" name="Loan Processing Plan" autoComplete="false">
+            <planItem id="pi1" name="Evaluate Credit" definitionRef="task1"/>
+            <planItem id="pi2" name="Determine Loan Amount" definitionRef="task2"/>
+            <planItem id="pi3" name="Manual Review" definitionRef="task3"/>
+            
+            <decisionTask id="task1" name="Evaluate Credit" decisionRef="creditDecision" isBlocking="true"/>
+            <decisionTask id="task2" name="Determine Loan Amount" decisionRef="loanAmountDecision" isBlocking="true"/>
+            <humanTask id="task3" name="Manual Review" isBlocking="true"/>
+            
+            <!-- Sentry for manual review based on credit decision -->
+            <sentry id="sentry1" name="Manual Review Required">
+                <planItemOnPart id="onPart1" sourceRef="pi1">
+                    <standardEvent>complete</standardEvent>
+                </planItemOnPart>
+                <ifPart>
+                    <condition>creditDecisionResult == "MANUAL_REVIEW"</condition>
+                </ifPart>
+            </sentry>
+            
+        </casePlanModel>
+    </case>
+
+</definitions>
